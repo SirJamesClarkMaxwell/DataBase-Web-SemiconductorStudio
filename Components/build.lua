@@ -17,7 +17,9 @@ project "Components"
                   "%{wks.location}/Vendor/imgui/backends",
                   "%{wks.location}/Vendor/imgui/misc/cpp",
                   "%{wks.location}/Vendor/implot",
-                  "%{wks.location}/Vendor/libs/glfw/include"
+                  "%{wks.location}/Vendor/libs/glfw/include",
+                --   "%{wks.location}/Vendor/yaml-cpp/include",
+
     }
     targetdir ( "%{wks.location}/lib/" )
     objdir ( "%{wks.location}/obj/%{cfg.buildcfg}" )
@@ -38,4 +40,6 @@ project "Components"
 
     filter { "system:windows" }
 		ignoredefaultlibraries { "msvcrt" }
-        links {  "legacy_stdio_definitions", "opengl32", "glfw3", "imgui", "implot" }
+        links {  "legacy_stdio_definitions", "opengl32", "glfw3", "imgui", "implot",
+        -- "yaml-cpp"
+    }

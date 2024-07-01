@@ -26,7 +26,7 @@ namespace UI::Components
 
 	void draw_tester(std::shared_ptr<UI::Data::MyData> state)
 	{
-		ImGui::Begin("Fitting Tester");
+		ImGui::Begin("Web-DataBase-SemiconductorStudio");
 
 		static ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerV;
 

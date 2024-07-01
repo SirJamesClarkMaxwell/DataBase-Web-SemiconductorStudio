@@ -2,7 +2,7 @@
 
 
 
-workspace "MyUI"
+workspace "Web-DataBase-SemiconductorStudio"
 	configurations { "Debug", "Release" }
 	platforms { "x86", "x86_64" }
 	language "C++"
@@ -15,6 +15,6 @@ workspace "MyUI"
 
 	include "./Components/build.lua"
 	include "./Vendor/build.lua"
-	include "./MyUI/build.lua"
+	include "./Web-DataBase-SemiconductorStudio/build.lua"
 
 
