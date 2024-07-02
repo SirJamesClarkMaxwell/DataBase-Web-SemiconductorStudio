@@ -22,3 +22,6 @@ bin/MyUI-Debug/MyUI.exe
 bin/Web-DataBase-SemiconductorStudio-Debug/Web-DataBase-SemiconductorStudio.exe
 obj/Debug/x86_64/Debug/Web-DataBase-SemiconductorStudio/Web-DataBase-SemiconductorStudio.ilk
 Web-DataBase-SemiconductorStudio/imgui.ini
+lib/Components.lib
+lib/imgui.lib
+lib/implot.lib
