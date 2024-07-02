@@ -25,3 +25,5 @@ Web-DataBase-SemiconductorStudio/imgui.ini
 lib/Components.lib
 lib/imgui.lib
 lib/implot.lib
+Web-DataBase-SemiconductorStudio/src/main_json.hpp
+**obj**
