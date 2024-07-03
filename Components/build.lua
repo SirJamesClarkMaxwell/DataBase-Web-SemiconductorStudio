@@ -6,6 +6,7 @@ project "Components"
     staticruntime(srunt)
     files {
         "%{prj.location}/**.cpp",
+        "%{prj.location}/src/**.cpp",
         "%{prj.location}/**.hpp",
     }
 
@@ -13,6 +14,7 @@ project "Components"
 
     includedirs { "%{prj.location}/", 
                   "%{prj.location}/include", 
+                  "%{prj.location}/src", 
                   "%{wks.location}/Vendor/imgui",
                   "%{wks.location}/Vendor/imgui/backends",
                   "%{wks.location}/Vendor/imgui/misc/cpp",

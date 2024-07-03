@@ -6,8 +6,12 @@
 
 namespace UI::Components
 {
-
+	using namespace UI::Data;
 	void draw_bg_window();
-	void draw_tester(std::shared_ptr<Data::MyData> state);
+	void draw_tester(std::shared_ptr<MyData> state);
 
+	void drawPlots(DataPreview &plotData);
+	void plotOneCharacteristic(UI::Data::Characteristic &characteristic);
+	void setupPlot(ImPlotFlags plot_flags, UI::Data::PlotData &plotData);
+	void drawContentBrowserData(DataPreview &ContentBrowserDataData);
 }
