@@ -1,5 +1,5 @@
-#pragma once
-#include "./../include/components.hpp"
+#include "pch.hpp"
+#include "components.hpp"
 namespace UI::Components
 {
 

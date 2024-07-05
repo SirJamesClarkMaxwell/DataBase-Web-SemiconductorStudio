@@ -27,3 +27,5 @@ lib/imgui.lib
 lib/implot.lib
 Web-DataBase-SemiconductorStudio/src/main_json.hpp
 **obj**
+/.vs/SSweb/v17
+/.vs

@@ -1,6 +1,6 @@
-#pragma once
+#include "pch.hpp"
 #include "components.hpp"
-#include "./../include/data.hpp"
+#include "data.hpp"
 #include <filesystem>
 namespace UI::Components
 {

@@ -1,7 +1,5 @@
-#include <iostream>
-#include <fstream>
+#include "pch.hpp"
 #include "tester.hpp"
-#include "json.hpp"
 #include "main_json.hpp"
 
 int main()

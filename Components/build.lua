@@ -10,6 +10,9 @@ project "Components"
         "%{prj.location}/**.hpp",
     }
 
+    pchheader "pch.hpp"
+    pchsource "%{prj.location}/src/pch.cpp"
+
     removefiles { "%{prj.location}/implot_demos/**.*" }
 
     includedirs { "%{prj.location}/", 
@@ -20,6 +23,7 @@ project "Components"
                   "%{wks.location}/Vendor/imgui/misc/cpp",
                   "%{wks.location}/Vendor/implot",
                   "%{wks.location}/Vendor/libs/glfw/include",
+                  "%{wks.location}/Vendor/nlohmann"
                 --   "%{wks.location}/Vendor/yaml-cpp/include",
 
     }

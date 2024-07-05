@@ -1,3 +1,4 @@
+#include "pch.hpp"
 #include "data.hpp"
 
 void UI::Data::PlotData::addCharacteristic(std::filesystem::path path)

@@ -2,6 +2,9 @@ project "Web-DataBase-SemiconductorStudio"
 	kind "ConsoleApp"
     language "C++"
 
+    pchheader "pch.hpp"
+    pchsource "%{prj.location}/src/pch.cpp"
+
     location "%{wks.location}/Web-DataBase-SemiconductorStudio"
     staticruntime(srunt)
     files {
