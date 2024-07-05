@@ -16,5 +16,6 @@ workspace "Web-DataBase-SemiconductorStudio"
 	include "./Components/build.lua"
 	include "./Vendor/build.lua"
 	include "./Web-DataBase-SemiconductorStudio/build.lua"
+	include "./Vendor/yaml-cpp"
 
 

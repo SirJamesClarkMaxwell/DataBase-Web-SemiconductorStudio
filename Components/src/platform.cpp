@@ -1,3 +1,4 @@
+#include "pch.hpp"
 #include "platform.hpp"
 
 namespace UI::Platform {

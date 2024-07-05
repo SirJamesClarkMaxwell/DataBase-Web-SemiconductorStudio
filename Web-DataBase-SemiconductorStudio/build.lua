@@ -23,7 +23,10 @@ project "Web-DataBase-SemiconductorStudio"
                   "%{wks.location}/Vendor/implot",
                   "%{wks.location}/Vendor/libs/glfw/include",
                   "%{wks.location}/Vendor/nlohmann",
-                  "%{wks.location}/Components/include"
+                  "%{wks.location}/Components/include",
+                  "%{wks.location}/Vendor/yaml-cpp/include",
+                  "%{wks.location}/Vendor/yaml-cpp/include/yaml-cpp"
+
 
     }
     targetdir ( "%{wks.location}/bin/%{prj.name}-%{cfg.buildcfg}" )
@@ -48,6 +51,6 @@ project "Web-DataBase-SemiconductorStudio"
 
     filter { "system:windows" }
 		ignoredefaultlibraries { "msvcrt" }
-        links {  "legacy_stdio_definitions", "opengl32", "glfw3", "imgui", "implot", "Components" }
+        links {  "legacy_stdio_definitions", "opengl32", "glfw3", "imgui", "implot", "Components", "yaml-cpp" }
 
 
