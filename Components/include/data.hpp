@@ -1,5 +1,6 @@
 #pragma once
 #include "stl.hpp"
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -19,12 +20,21 @@ namespace UI::Data
 	class Characteristic
 	{
 	public:
-		Characteristic() = default;
-		void readData(std::filesystem::path &path)
+		Characteristic(std::filesystem::path path)
+			: m_path(path) { readData(); };
+		void readData()
 		{
-			std::string pathString = path.string();
-			json readCharacteristic = createJSONObject(pathString);
-			from_json(readCharacteristic, *this);
+			std::string pathString = m_path.string();
+			m_temperature = read_temperature(pathString);
+			json readCharacteristic;
+			try
+			{
+				readCharacteristic = createJSONObject(pathString);
+				from_json(readCharacteristic, *this);
+			}
+			catch (const std::exception &e)
+			{
+			}
 		};
 		std::vector<double> getVoltage() { return V; };
 		std::vector<double> getCurrent() { return I; };
@@ -37,6 +47,15 @@ namespace UI::Data
 			return logI;
 		}
 		std::vector<double> getDensityCurrent() { return J; };
+		double getTemperature() { return m_temperature; };
+		bool comparePath(const Characteristic &other) { return this->m_path == other.m_path; };
+		bool operator==(const Characteristic &other) { return this->m_temperature == other.m_temperature; };
+		bool operator!=(const Characteristic &other) { return this->m_temperature != other.m_temperature; };
+		bool operator<(const Characteristic &other)
+		{
+			std::cout << "Comparing " << this->m_temperature << " < " << other.m_temperature << "   " << (this->m_temperature < other.m_temperature) << std::endl;
+			return this->m_temperature < other.m_temperature;
+		};
 
 	private:
 		void resize(int value)
@@ -74,11 +93,30 @@ namespace UI::Data
 			transform(j.at("current"), iv.I);
 			transform(j.at("density current"), iv.J);
 		};
+		double read_temperature(std::string &path)
+		{
+			std::stringstream ss(m_path.string());
+			std::string token;
+			std::vector<std::string> slices;
+			char delimiter = '_';
+			while (std::getline(ss, token, delimiter))
+				slices.push_back(token);
+
+			for (const auto &item : slices)
+			{
+				if (item[0] == 'T')
+					return std::stod(item.substr(1));
+				else
+					continue;
+			};
+		};
 
 	private:
+		std::filesystem::path m_path;
 		std::vector<double> V{};
 		std::vector<double> I{};
 		std::vector<double> J{};
+		double m_temperature{};
 	};
 
 	struct PlotProperties
@@ -94,8 +132,9 @@ namespace UI::Data
 		PlotData(){};
 		PlotProperties plotProperties{};
 		void addCharacteristic(std::filesystem::path path);
-		Characteristic operator[](int index) { return m_characteristics[index]; }
+		Characteristic operator[](int index) { return m_characteristics[index]; };
 		int numberOfCharacteristics = 0;
+		std::vector<Characteristic> &getCharacteristics() { return m_characteristics; };
 
 	private:
 		std::vector<Characteristic> m_characteristics{};
@@ -123,5 +162,4 @@ namespace UI::Data
 		MyData() = default;
 		DataPreview dataPreview{};
 	};
-
 }

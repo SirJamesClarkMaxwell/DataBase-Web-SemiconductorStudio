@@ -3,8 +3,10 @@
 
 void UI::Data::PlotData::addCharacteristic(std::filesystem::path path)
 {
-    numberOfCharacteristics++;
-    Characteristic characteristic;
-    characteristic.readData(path);
-    m_characteristics.push_back(characteristic);
+
+    Characteristic characteristic(path);
+    auto begin = m_characteristics.begin();
+    auto end = m_characteristics.end();
+    if ((std::find(begin, end, characteristic)) == end)
+        m_characteristics.push_back(characteristic);
 }

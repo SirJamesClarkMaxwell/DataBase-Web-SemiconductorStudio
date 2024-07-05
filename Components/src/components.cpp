@@ -30,30 +30,42 @@ namespace UI::Components
 
 		drawPlots(state->dataPreview);
 		drawContentBrowserData(state->dataPreview);
-		// ImGui::Begin("Advanced Table");
-		// drawAdvancedTable();
-		// ImGui::Text("Hello World");
-		// ImGui::End();
-		// ShowSelectableTable();
-		// ImPlot::ShowDemoWindow();
-		// ImGui::ShowDemoWindow();
+
+		/*
+		ImGui::Begin("Advanced Table");
+		Demo_LinePlots();
+		drawAdvancedTable();
+		ImGui::Text("Hello World");
+		ImGui::End();
+		ShowSelectableTable();
+		ImPlot::ShowDemoWindow();
+		ImGui::ShowDemoWindow();
+		*/
 	}
 
 	void drawPlots(Data::DataPreview &dataPreview)
 	{
 		using namespace UI::Data;
-
-		static ImPlotFlags plot_flags = ImPlotAxisFlags_AutoFit; // TODO move this property into  some class, probably PlotProperties
-		ImGui::CheckboxFlags("ImPlotAxisFlags_AutoFit##X", (unsigned int *)&plot_flags, ImPlotAxisFlags_AutoFit);
-		ImVec2 plot_size(-1, ImGui::GetContentRegionAvail().x * 0.7f);
-		if (!ImGui::GetIO().KeyCtrl && ImGui::GetScrollMaxY() > 0)
-			plot_flags = ImPlotFlags_NoInputs;
-
+		static ImPlotFlags plot_flags = ImPlotAxisFlags_None;
 		PlotData plotData = dataPreview.plotData;
+		// plot_flags = plot_flags | ImPlotAxisFlags_AutoFit; // TODO move this property into  some class, probably PlotProperties
+
+		ImGui::CheckboxFlags("ImPlotAxisFlags_AutoFit##X", (unsigned int *)&plot_flags, ImPlotAxisFlags_AutoFit);
+		ImGui::SameLine();
+		if (ImGui::Button("Sort"))
+		{
+			auto &characteristics = plotData.getCharacteristics();
+
+			std::sort(characteristics.begin(), characteristics.end());
+		}
+		ImVec2 plot_size(-1, ImGui::GetContentRegionAvail().x * 0.7f);
+
+		if (!ImGui::GetIO().KeyCtrl && ImGui::GetScrollMaxY() > 0)
+			plot_flags = plot_flags | ImPlotFlags_NoInputs;
 
 		static ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerV;
 		std::tuple<std::string, std::string> axisProperties = plotData.plotProperties.axis;
-		if (ImPlot::BeginPlot("testing Plot", plot_size))
+		if (ImPlot::BeginPlot("testing Plot", plot_size, plot_flags))
 		{
 			// setupPlot(plot_flags, plotData);
 			ImPlot::SetupAxes("V", "I", plot_flags, plot_flags);
@@ -61,11 +73,9 @@ namespace UI::Components
 				ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Linear);
 			if (!plotData.plotProperties.lin_y_scale)
 				ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Linear);
-			for (int i = 0; i < plotData.numberOfCharacteristics; i++)
-			{
-				Characteristic characteristic = plotData[i];
+			for (auto &characteristic : plotData.getCharacteristics())
 				plotOneCharacteristic(characteristic);
-			}
+
 			ImPlot::EndPlot();
 		}
 	}
@@ -73,12 +83,12 @@ namespace UI::Components
 	{
 		auto V = characteristic.getVoltage();
 		auto I = characteristic.getLogCurrent();
-
-		ImPlot::PlotLine("I(V)", V.data(), I.data(), V.size());
+		std::string title = "I(V) " + std::to_string(characteristic.getTemperature()) + " K";
+		ImPlot::PlotLine(title.c_str(), V.data(), I.data(), V.size());
 	}
 	void setupPlot(ImPlotFlags plot_flags, UI::Data::PlotData &plotData)
 	{
-		ImPlot::SetupAxes("V", "I", plot_flags, plot_flags);
+		ImPlot::SetupAxes("V", "I");
 		if (!plotData.plotProperties.lin_x_scale)
 			ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Linear);
 		if (!plotData.plotProperties.lin_y_scale)
@@ -86,6 +96,7 @@ namespace UI::Components
 	}
 	void drawContentBrowserData(Data::DataPreview &contentBrowserData)
 	{
+
 		ImGui::Begin("Content Browser");
 		if (contentBrowserData.currentPath != std::filesystem::path(contentBrowserData.rootPath))
 		{
@@ -162,5 +173,27 @@ namespace UI::Components
 
 		ImGui::End();
 	}
-
+	void Demo_LinePlots()
+	{
+		static float xs1[1001], ys1[1001];
+		for (int i = 0; i < 1001; ++i)
+		{
+			xs1[i] = i * 0.001f;
+			ys1[i] = 0.5f + 0.5f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
+		}
+		static double xs2[20], ys2[20];
+		for (int i = 0; i < 20; ++i)
+		{
+			xs2[i] = i * 1 / 19.0f;
+			ys2[i] = xs2[i] * xs2[i];
+		}
+		if (ImPlot::BeginPlot("Line Plots"))
+		{
+			ImPlot::SetupAxes("x", "y");
+			ImPlot::PlotLine("f(x)", xs1, ys1, 1001);
+			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
+			ImPlot::PlotLine("g(x)", xs2, ys2, 20, ImPlotLineFlags_Segments);
+			ImPlot::EndPlot();
+		}
+	}
 };
