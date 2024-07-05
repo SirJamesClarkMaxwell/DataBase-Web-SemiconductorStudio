@@ -30,7 +30,12 @@ namespace UI::Components
 
 		drawPlots(state->dataPreview);
 		drawContentBrowserData(state->dataPreview);
-		ImPlot::ShowDemoWindow();
+		// ImGui::Begin("Advanced Table");
+		// drawAdvancedTable();
+		// ImGui::Text("Hello World");
+		// ImGui::End();
+		// ShowSelectableTable();
+		// ImPlot::ShowDemoWindow();
 		// ImGui::ShowDemoWindow();
 	}
 
@@ -105,6 +110,57 @@ namespace UI::Components
 					contentBrowserData.plotData.addCharacteristic(path);
 			}
 		}
+
+		static std::vector<std::string> items = {"Item 1", "Item 2", "Item 3", "Item 4"};
+		static int selected = -1;
+
 		ImGui::End();
 	};
-}
+	struct TableRow
+	{
+		std::string column1;
+		std::string column2;
+		std::string column3;
+	};
+	void ShowSelectableTable()
+	{
+		static std::vector<TableRow> rows = {
+			{"Row 1 Col 1", "Row 1 Col 2", "Row 1 Col 3"},
+			{"Row 2 Col 1", "Row 2 Col 2", "Row 2 Col 3"},
+			{"Row 3 Col 1", "Row 3 Col 2", "Row 3 Col 3"},
+			{"Row 4 Col 1", "Row 4 Col 2", "Row 4 Col 3"}};
+		static int selected = -1;
+
+		ImGui::Begin("Selectable Table");
+
+		if (ImGui::BeginTable("##table", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))
+		{
+			ImGui::TableSetupColumn("Column 1");
+			ImGui::TableSetupColumn("Column 2");
+			ImGui::TableSetupColumn("Column 3");
+			ImGui::TableHeadersRow();
+
+			for (int row = 0; row < rows.size(); row++)
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+
+				for (int column = 0; column < 3; column++)
+				{
+					ImGui::TableSetColumnIndex(column);
+					std::string cellValue = (column == 0) ? rows[row].column1 : (column == 1) ? rows[row].column2
+																							  : rows[row].column3;
+
+					if (ImGui::Selectable(cellValue.c_str(), selected == row))
+					{
+						selected = row; // Update the selected row
+					}
+				}
+			}
+			ImGui::EndTable();
+		}
+
+		ImGui::End();
+	}
+
+};
