@@ -17,5 +17,5 @@ namespace UI::Components
 	void ShowSelectableTable();
 	void ShowMultiSelectableTable();
 	void drawAdvancedTable();
-
+	void Demo_LinePlots();
 }
