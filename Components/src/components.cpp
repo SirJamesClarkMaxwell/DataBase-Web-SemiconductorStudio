@@ -47,7 +47,7 @@ namespace UI::Components
 	{
 		using namespace UI::Data;
 		static ImPlotFlags plot_flags = ImPlotAxisFlags_None;
-		PlotData plotData = dataPreview.plotData;
+		PlotData& plotData = dataPreview.plotData;
 		// plot_flags = plot_flags | ImPlotAxisFlags_AutoFit; // TODO move this property into  some class, probably PlotProperties
 
 		ImGui::CheckboxFlags("ImPlotAxisFlags_AutoFit##X", (unsigned int *)&plot_flags, ImPlotAxisFlags_AutoFit);
