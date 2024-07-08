@@ -61,7 +61,7 @@ namespace UI::Components
 		ImGui::SameLine();
 		if (ImGui::Button("Sort"))
 		{
-			auto &characteristics = plotData.getCharacteristics();
+			auto &characteristics = plotData.characteristics;
 
 			std::sort(characteristics.begin(), characteristics.end());
 		}
@@ -80,7 +80,7 @@ namespace UI::Components
 				ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Linear);
 			if (!plotData.plotProperties.lin_y_scale)
 				ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Linear);
-			for (auto &characteristic : plotData.getCharacteristics())
+			for (auto &characteristic : plotData.characteristics)
 				plotOneCharacteristic(characteristic);
 
 			ImPlot::EndPlot();
