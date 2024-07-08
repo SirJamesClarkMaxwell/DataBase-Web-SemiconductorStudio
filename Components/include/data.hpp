@@ -36,9 +36,9 @@ namespace UI::Data
 		std::vector<double> getDensityCurrent() { return J; };
 		double getTemperature() { return m_temperature; };
 		bool comparePath(const Characteristic &other) { return this->m_path == other.m_path; };
-		bool operator==(const Characteristic &other) { return this->m_temperature == other.m_temperature; };
-		bool operator!=(const Characteristic &other) { return this->m_temperature != other.m_temperature; };
-		bool operator<(const Characteristic &other) { return this->m_temperature < other.m_temperature; };
+		bool operator==(const Characteristic &other) const { return this->m_temperature == other.m_temperature; };
+		bool operator!=(const Characteristic &other) const { return this->m_temperature != other.m_temperature; };
+		bool operator<(const Characteristic &other) const { return this->m_temperature < other.m_temperature; };
 
 	private:
 		void resize(int value);
@@ -54,6 +54,7 @@ namespace UI::Data
 		std::vector<double> J{};
 		double m_temperature{};
 	};
+	bool checkExistence(const std::vector<Characteristic> &destination, const Characteristic &item);
 
 	struct PlotProperties
 	{
@@ -68,6 +69,7 @@ namespace UI::Data
 		PlotData(){};
 		PlotProperties plotProperties{};
 		void addCharacteristic(std::filesystem::path path);
+		void addCharacteristic(const Characteristic &item);
 		Characteristic operator[](int index) { return characteristics[index]; };
 		int numberOfCharacteristics = 0;
 		std::vector<Characteristic> characteristics{};
@@ -76,6 +78,8 @@ namespace UI::Data
 	struct ContentBrowserData
 	{
 		ContentBrowserData() = default;
+		std::vector<Characteristic> characteristics{};
+		void readCharacteristic(const std::filesystem::path &path);
 	};
 
 	class DataPreview

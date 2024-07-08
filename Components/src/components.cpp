@@ -105,12 +105,14 @@ namespace UI::Components
 	{
 
 		ImGui::Begin("Content Browser");
+
+		if (ImGui::Button("Read all"))
+			readAllDataFromDirectory(contentBrowserData.rootPath, contentBrowserData.currentPath, contentBrowserData.contentBrowserData);
+
 		if (contentBrowserData.currentPath != std::filesystem::path(contentBrowserData.rootPath))
 		{
 			if (ImGui::Button("<-"))
-			{
 				contentBrowserData.currentPath = contentBrowserData.currentPath.parent_path();
-			}
 		}
 		for (auto &directoryEntry : std::filesystem::directory_iterator(contentBrowserData.currentPath))
 		{
@@ -125,14 +127,33 @@ namespace UI::Components
 			else
 			{
 				if (ImGui::Button(fileNameString.c_str()))
-					contentBrowserData.plotData.addCharacteristic(path);
+					contentBrowserData.contentBrowserData.readCharacteristic(path);
 			}
 		}
 
-		static std::vector<std::string> items = {"Item 1", "Item 2", "Item 3", "Item 4"};
-		static int selected = -1;
+		ImGui::Begin("Plotting Settings ");
+
+		if (ImGui::Button("Plot all"))
+		{
+			for (auto &item : contentBrowserData.contentBrowserData.characteristics)
+				contentBrowserData.plotData.addCharacteristic(item);
+		}
 
 		ImGui::End();
+		ImGui::End();
+	}
+	void readAllDataFromDirectory(const std::filesystem::path &rootPath, const std::filesystem::path &currentPath, ContentBrowserData &contentBrowserData)
+	{
+		for (auto &directoryEntry : std::filesystem::directory_iterator(currentPath))
+		{
+			const auto &path = directoryEntry.path();
+			auto relativePath = std::filesystem::relative(path, rootPath);
+			std::string fileNameString = relativePath.filename().string();
+			if (directoryEntry.is_directory())
+				continue;
+			else
+				contentBrowserData.readCharacteristic(path);
+		}
 	};
 	struct TableRow
 	{

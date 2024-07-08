@@ -11,6 +11,13 @@ std::vector<double> Characteristic::getLogCurrent()
     return logI;
 }
 
+bool UI::Data::checkExistence(const std::vector<Characteristic> &destination, const Characteristic &item)
+{
+    auto begin = destination.begin();
+    auto end = destination.end();
+    return std::find(begin, end, item) == end;
+}
+
 void Characteristic::resize(int value)
 {
     V.resize(value);
@@ -72,10 +79,20 @@ double Characteristic::read_temperature(std::string &path)
 
 void PlotData::addCharacteristic(std::filesystem::path path)
 {
-
     Characteristic characteristic(path);
-    auto begin = characteristics.begin();
-    auto end = characteristics.end();
-    if ((std::find(begin, end, characteristic)) == end)
+    if (checkExistence(characteristics, characteristic))
+        characteristics.push_back(characteristic);
+}
+
+void PlotData::addCharacteristic(const Characteristic &item)
+{
+    if (checkExistence(characteristics, item))
+        characteristics.push_back(item);
+}
+
+void ContentBrowserData::readCharacteristic(const std::filesystem::path &path)
+{
+    Characteristic characteristic(path);
+    if (checkExistence(characteristics, characteristic))
         characteristics.push_back(characteristic);
 }

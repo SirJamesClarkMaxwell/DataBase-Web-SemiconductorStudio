@@ -14,6 +14,7 @@ namespace UI::Components
 	void plotOneCharacteristic(UI::Data::Characteristic &characteristic);
 	void setupPlot(ImPlotFlags plot_flags, UI::Data::PlotData &plotData);
 	void drawContentBrowserData(DataPreview &ContentBrowserDataData);
+	void readAllDataFromDirectory(const std::filesystem::path &rootPath, const std::filesystem::path &currentPath, ContentBrowserData &contentBrowserData);
 	void ShowSelectableTable();
 	void ShowMultiSelectableTable();
 	void drawAdvancedTable();
