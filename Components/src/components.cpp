@@ -28,8 +28,15 @@ namespace UI::Components
 	void draw_tester(std::shared_ptr<Data::MyData> state)
 	{
 
-		drawPlots(state->dataPreview);
+		// TODO modify content browser struct to have vector of read characteristics
+		// TODO modify content of PlotData to store only plotted characteristics
+		// TODO add readAll button in content browser
+		// TODO add methods to adding/removing characteristics by given index from PlotData stuct
+		// TODO create table with checkable items
+		// TODO corelate checkable items wit adding data to PlotData vector
+
 		drawContentBrowserData(state->dataPreview);
+		drawPlots(state->dataPreview);
 
 		/*
 		ImGui::Begin("Advanced Table");
@@ -47,7 +54,7 @@ namespace UI::Components
 	{
 		using namespace UI::Data;
 		static ImPlotFlags plot_flags = ImPlotAxisFlags_None;
-		PlotData& plotData = dataPreview.plotData;
+		PlotData &plotData = dataPreview.plotData;
 		// plot_flags = plot_flags | ImPlotAxisFlags_AutoFit; // TODO move this property into  some class, probably PlotProperties
 
 		ImGui::CheckboxFlags("ImPlotAxisFlags_AutoFit##X", (unsigned int *)&plot_flags, ImPlotAxisFlags_AutoFit);
