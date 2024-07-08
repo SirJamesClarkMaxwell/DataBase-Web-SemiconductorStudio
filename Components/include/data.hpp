@@ -1,12 +1,6 @@
 #pragma once
-#include "stl.hpp"
-#include <algorithm>
-#include <iostream>
-#include <fstream>
-#include <string>
+
 #include "pch.hpp"
-#include <cmath>
-#include <filesystem>
 #include "imgui.h"
 #include "implot.h"
 namespace UI::Data

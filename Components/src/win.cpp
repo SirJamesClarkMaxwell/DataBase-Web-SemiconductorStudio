@@ -1,21 +1,25 @@
 #include "pch.hpp"
 #include "win.hpp"
 
-namespace UI::Platform {
-	std::shared_ptr<GLFWwindow> Window::m_winPtr{ nullptr };
-	int Window::m_winWidth{ 1280 };
-	int Window::m_winHeight{ 720 };
-	std::string Window::m_winName{ "WINDOW" };
+namespace UI::Platform
+{
+	std::shared_ptr<GLFWwindow> Window::m_winPtr{nullptr};
+	int Window::m_winWidth{1280};
+	int Window::m_winHeight{720};
+	std::string Window::m_winName{"WINDOW"};
 
-	bool Window::init() {
-		if (!createContext()) return false;
-		
+	bool Window::init()
+	{
+		if (!createContext())
+			return false;
+
 		m_winPtr = std::shared_ptr<GLFWwindow>(glfwCreateWindow(m_winWidth, m_winHeight, m_winName.c_str(), nullptr, nullptr), &destroy);
-		if (m_winPtr == nullptr) {
+		if (m_winPtr == nullptr)
+		{
 			destroyContext();
 			return false;
 		}
-	
+
 		glfwMakeContextCurrent(m_winPtr.get());
 		glfwSwapInterval(1);
 
@@ -24,11 +28,12 @@ namespace UI::Platform {
 		return true;
 	}
 
-	void Window::initImGui() {
+	void Window::initImGui()
+	{
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImPlot::CreateContext();
-		ImGuiIO& io = ImGui::GetIO();
+		ImGuiIO &io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -42,8 +47,10 @@ namespace UI::Platform {
 		ImGui_ImplOpenGL3_Init("#version 130");
 	}
 
-	bool Window::beginFrame() {
-		if (m_winPtr == nullptr && !init()) return false;
+	bool Window::beginFrame()
+	{
+		if (m_winPtr == nullptr && !init())
+			return false;
 		glfwPollEvents();
 
 		ImGui_ImplOpenGL3_NewFrame();
@@ -53,8 +60,10 @@ namespace UI::Platform {
 		return true;
 	}
 
-	void Window::endFrame() {
-		if (m_winPtr == nullptr) return;
+	void Window::endFrame()
+	{
+		if (m_winPtr == nullptr)
+			return;
 		ImGui::Render();
 		int display_w, display_h;
 		glfwGetFramebufferSize(m_winPtr.get(), &display_w, &display_h);
@@ -68,20 +77,25 @@ namespace UI::Platform {
 		glfwSwapBuffers(m_winPtr.get());
 	}
 
-	void Window::destroyImGui() {
-		if (m_winPtr) return;
+	void Window::destroyImGui()
+	{
+		if (m_winPtr)
+			return;
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImPlot::DestroyContext();
 		ImGui::DestroyContext();
 	}
 
-	void Window::destroyContext() {
-		if (m_winPtr) return;
+	void Window::destroyContext()
+	{
+		if (m_winPtr)
+			return;
 		glfwTerminate();
 	}
 
-	void Window::destroy(GLFWwindow* win_ptr) {
+	void Window::destroy(GLFWwindow *win_ptr)
+	{
 		glfwDestroyWindow(win_ptr);
 
 		destroyImGui();
@@ -90,21 +104,28 @@ namespace UI::Platform {
 		std::cout << "Get rekt" << "\n";
 	}
 
-	bool Window::shouldClose() {
-		if (m_winPtr == nullptr && !init()) return true;
+	bool Window::shouldClose()
+	{
+		if (m_winPtr == nullptr && !init())
+			return true;
 
 		return glfwWindowShouldClose(m_winPtr.get());
 	}
 
-	std::shared_ptr<GLFWwindow> Window::getWindow() {
-		if (m_winPtr == nullptr) init();
+	std::shared_ptr<GLFWwindow> Window::getWindow()
+	{
+		if (m_winPtr == nullptr)
+			init();
 		return m_winPtr;
 	}
 
-	bool Window::createContext() {
-		if (m_winPtr) return true;
+	bool Window::createContext()
+	{
+		if (m_winPtr)
+			return true;
 		glfwSetErrorCallback(glfw_error_callback);
-		if (!glfwInit()) return false;
+		if (!glfwInit())
+			return false;
 
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
@@ -112,8 +133,10 @@ namespace UI::Platform {
 		return true;
 	}
 
-	bool Window::initProperties(int width, int height, const std::string& name) {
-		if (m_winPtr) return false;
+	bool Window::initProperties(int width, int height, const std::string &name)
+	{
+		if (m_winPtr)
+			return false;
 
 		m_winWidth = width;
 		m_winHeight = height;
@@ -122,9 +145,10 @@ namespace UI::Platform {
 		return true;
 	}
 
-	void Window::glfw_error_callback(int error, const char* description) {
-		std::cout << "GLFW Error %d: %s\n" << error << description << "\n";
+	void Window::glfw_error_callback(int error, const char *description)
+	{
+		std::cout << "GLFW Error %d: %s\n"
+				  << error << description << "\n";
 	}
-
 
 }
