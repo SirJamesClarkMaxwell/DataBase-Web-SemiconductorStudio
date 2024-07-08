@@ -28,9 +28,6 @@ namespace UI::Components
 	void draw_tester(std::shared_ptr<Data::MyData> state)
 	{
 
-		// TODO modify content browser struct to have vector of read characteristics
-		// TODO modify content of PlotData to store only plotted characteristics
-		// TODO add readAll button in content browser
 		// TODO add methods to adding/removing characteristics by given index from PlotData stuct
 		// TODO create table with checkable items
 		// TODO corelate checkable items wit adding data to PlotData vector
@@ -137,6 +134,19 @@ namespace UI::Components
 		{
 			for (auto &item : contentBrowserData.contentBrowserData.characteristics)
 				contentBrowserData.plotData.addCharacteristic(item);
+		}
+		if (ImGui::Button("Remove All"))
+		{
+			for (auto &item : contentBrowserData.contentBrowserData.characteristics)
+				contentBrowserData.plotData.removeCharacteristic(item);
+		}
+		for (auto &item : contentBrowserData.contentBrowserData.characteristics)
+		{
+			ImGui::Checkbox(item.name.c_str(), &item.selected);
+			if (item.selected)
+				contentBrowserData.plotData.addCharacteristic(item);
+			else
+				contentBrowserData.plotData.removeCharacteristic(item);
 		}
 
 		ImGui::End();

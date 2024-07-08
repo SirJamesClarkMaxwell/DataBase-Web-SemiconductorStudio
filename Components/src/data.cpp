@@ -15,7 +15,8 @@ bool UI::Data::checkExistence(const std::vector<Characteristic> &destination, co
 {
     auto begin = destination.begin();
     auto end = destination.end();
-    return std::find(begin, end, item) == end;
+    bool checked = std::find(begin, end, item) == end;
+    return !checked;
 }
 
 void Characteristic::resize(int value)
@@ -77,22 +78,25 @@ double Characteristic::read_temperature(std::string &path)
     };
 }
 
-void PlotData::addCharacteristic(std::filesystem::path path)
+void PlotData::addCharacteristic(Characteristic &item)
 {
-    Characteristic characteristic(path);
-    if (checkExistence(characteristics, characteristic))
-        characteristics.push_back(characteristic);
+    if (!checkExistence(characteristics, item))
+        characteristics.push_back(item);
+    item.selected = true;
 }
 
-void PlotData::addCharacteristic(const Characteristic &item)
+void PlotData::removeCharacteristic(Characteristic &item)
 {
+    const auto &begin = characteristics.begin();
+    const auto &end = characteristics.end();
     if (checkExistence(characteristics, item))
-        characteristics.push_back(item);
+        characteristics.erase(std::remove(begin, end, item), end);
+    item.selected = false;
 }
 
 void ContentBrowserData::readCharacteristic(const std::filesystem::path &path)
 {
     Characteristic characteristic(path);
-    if (checkExistence(characteristics, characteristic))
+    if (!checkExistence(characteristics, characteristic))
         characteristics.push_back(characteristic);
 }

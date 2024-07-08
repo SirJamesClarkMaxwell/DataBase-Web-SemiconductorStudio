@@ -20,6 +20,7 @@ namespace UI::Data
 		{
 			std::string pathString = m_path.string();
 			m_temperature = read_temperature(pathString);
+			name = m_path.filename().string();
 			json readCharacteristic;
 			try
 			{
@@ -39,6 +40,8 @@ namespace UI::Data
 		bool operator==(const Characteristic &other) const { return this->m_temperature == other.m_temperature; };
 		bool operator!=(const Characteristic &other) const { return this->m_temperature != other.m_temperature; };
 		bool operator<(const Characteristic &other) const { return this->m_temperature < other.m_temperature; };
+		bool selected{true};
+		std::string name;
 
 	private:
 		void resize(int value);
@@ -68,8 +71,8 @@ namespace UI::Data
 	{
 		PlotData(){};
 		PlotProperties plotProperties{};
-		void addCharacteristic(std::filesystem::path path);
-		void addCharacteristic(const Characteristic &item);
+		void addCharacteristic(Characteristic &item);
+		void removeCharacteristic(Characteristic &item);
 		Characteristic operator[](int index) { return characteristics[index]; };
 		int numberOfCharacteristics = 0;
 		std::vector<Characteristic> characteristics{};
