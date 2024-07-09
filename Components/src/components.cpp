@@ -27,11 +27,6 @@ namespace UI::Components
 
 	void draw_tester(std::shared_ptr<Data::MyData> state)
 	{
-
-		// TODO add methods to adding/removing characteristics by given index from PlotData stuct
-		// TODO create table with checkable items
-		// TODO corelate checkable items wit adding data to PlotData vector
-
 		drawContentBrowserData(state->dataPreview);
 		drawPlots(state->dataPreview);
 
@@ -46,7 +41,7 @@ namespace UI::Components
 		ImGui::ShowDemoWindow();
 		*/
 	}
-
+	bool operator==(const std::pair<std::string, Characteristic> &lhs, const std::pair<std::string, Characteristic> &rhs) { return lhs.first == rhs.first; };
 	void drawPlots(Data::DataPreview &dataPreview)
 	{
 		using namespace UI::Data;
@@ -58,9 +53,15 @@ namespace UI::Components
 		ImGui::SameLine();
 		if (ImGui::Button("Sort"))
 		{
-			auto &characteristics = plotData.characteristics;
-
-			std::sort(characteristics.begin(), characteristics.end());
+#if 0
+//TODO to be fix as fast it is possible
+			/*
+			auto &map = plotData.characteristics;
+			std::vector<std::pair<std::string, Characteristic>> characteristics(map.begin(), map.end());
+			std::sort(characteristics.begin(), characteristics.end(), [](std::pair<std::string, Characteristic> &a, std::pair<std::string, Characteristic> &b)
+					  { return a.second.getTemperature() < b.second.getTemperature(); });
+			*/
+#endif
 		}
 		ImVec2 plot_size(-1, ImGui::GetContentRegionAvail().x * 0.7f);
 
@@ -77,8 +78,8 @@ namespace UI::Components
 				ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Linear);
 			if (!plotData.plotProperties.lin_y_scale)
 				ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Linear);
-			for (auto &characteristic : plotData.characteristics)
-				plotOneCharacteristic(characteristic);
+			for (auto &item : plotData.characteristics)
+				plotOneCharacteristic(item.second);
 
 			ImPlot::EndPlot();
 		}
@@ -133,20 +134,21 @@ namespace UI::Components
 		if (ImGui::Button("Plot all"))
 		{
 			for (auto &item : contentBrowserData.contentBrowserData.characteristics)
-				contentBrowserData.plotData.addCharacteristic(item);
+				contentBrowserData.plotData.addCharacteristic(item.second);
 		}
+		ImGui::SameLine();
 		if (ImGui::Button("Remove All"))
 		{
 			for (auto &item : contentBrowserData.contentBrowserData.characteristics)
-				contentBrowserData.plotData.removeCharacteristic(item);
+				contentBrowserData.plotData.removeCharacteristic(item.second);
 		}
 		for (auto &item : contentBrowserData.contentBrowserData.characteristics)
 		{
-			ImGui::Checkbox(item.name.c_str(), &item.selected);
-			if (item.selected)
-				contentBrowserData.plotData.addCharacteristic(item);
+			ImGui::Checkbox(item.first.c_str(), &item.second.selected);
+			if (item.second.selected)
+				contentBrowserData.plotData.addCharacteristic(item.second);
 			else
-				contentBrowserData.plotData.removeCharacteristic(item);
+				contentBrowserData.plotData.removeCharacteristic(item.second);
 		}
 
 		ImGui::End();

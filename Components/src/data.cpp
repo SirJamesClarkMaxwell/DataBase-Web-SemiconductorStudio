@@ -11,12 +11,13 @@ std::vector<double> Characteristic::getLogCurrent()
     return logI;
 }
 
-bool UI::Data::checkExistence(const std::vector<Characteristic> &destination, const Characteristic &item)
+bool UI::Data::checkExistence(const std::unordered_map<std::string, Characteristic> &destination, const std::string &item)
 {
-    auto begin = destination.begin();
-    auto end = destination.end();
-    bool checked = std::find(begin, end, item) == end;
-    return !checked;
+    return destination.find(item) != destination.end();
+    // auto begin = destination.begin();
+    // auto end = destination.end();
+    // bool checked = std::find(begin, end, item) == end;
+    // return !checked;
 }
 
 void Characteristic::resize(int value)
@@ -80,8 +81,8 @@ double Characteristic::read_temperature(std::string &path)
 
 void PlotData::addCharacteristic(Characteristic &item)
 {
-    if (!checkExistence(characteristics, item))
-        characteristics.push_back(item);
+    if (!checkExistence(characteristics, item.name))
+        characteristics[item.name] = item;
     item.selected = true;
 }
 
@@ -89,7 +90,7 @@ void PlotData::removeCharacteristic(Characteristic &item)
 {
     const auto &begin = characteristics.begin();
     const auto &end = characteristics.end();
-    if (checkExistence(characteristics, item))
+    if (checkExistence(characteristics, item.name))
         characteristics.erase(std::remove(begin, end, item), end);
     item.selected = false;
 }
@@ -97,6 +98,6 @@ void PlotData::removeCharacteristic(Characteristic &item)
 void ContentBrowserData::readCharacteristic(const std::filesystem::path &path)
 {
     Characteristic characteristic(path);
-    if (!checkExistence(characteristics, characteristic))
-        characteristics.push_back(characteristic);
+    if (!checkExistence(characteristics, characteristic.name))
+        characteristics[characteristic.name] = characteristic;
 }

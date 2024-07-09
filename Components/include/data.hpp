@@ -14,6 +14,7 @@ namespace UI::Data
 	class Characteristic
 	{
 	public:
+		Characteristic() = default;
 		Characteristic(std::filesystem::path path)
 			: m_path(path) { readData(); };
 		void readData()
@@ -36,11 +37,18 @@ namespace UI::Data
 		std::vector<double> getLogCurrent();
 		std::vector<double> getDensityCurrent() { return J; };
 		double getTemperature() { return m_temperature; };
+
 		bool comparePath(const Characteristic &other) { return this->m_path == other.m_path; };
 		bool operator==(const Characteristic &other) const { return this->m_temperature == other.m_temperature; };
 		bool operator!=(const Characteristic &other) const { return this->m_temperature != other.m_temperature; };
 		bool operator<(const Characteristic &other) const { return this->m_temperature < other.m_temperature; };
 		bool selected{true};
+
+		Characteristic(const Characteristic &) = default;
+		Characteristic &operator=(const Characteristic &) = default;
+
+		Characteristic(Characteristic &&) = default;
+		Characteristic &operator=(Characteristic &&) = default;
 		std::string name;
 
 	private:
@@ -57,7 +65,7 @@ namespace UI::Data
 		std::vector<double> J{};
 		double m_temperature{};
 	};
-	bool checkExistence(const std::vector<Characteristic> &destination, const Characteristic &item);
+	bool checkExistence(const std::unordered_map<std::string, Characteristic> &destination, const std::string &item);
 
 	struct PlotProperties
 	{
@@ -73,15 +81,15 @@ namespace UI::Data
 		PlotProperties plotProperties{};
 		void addCharacteristic(Characteristic &item);
 		void removeCharacteristic(Characteristic &item);
-		Characteristic operator[](int index) { return characteristics[index]; };
+		Characteristic operator[](const std::string &name) { return characteristics[name]; };
 		int numberOfCharacteristics = 0;
-		std::vector<Characteristic> characteristics{};
+		std::unordered_map<std::string, Characteristic> characteristics{};
 	};
 
 	struct ContentBrowserData
 	{
 		ContentBrowserData() = default;
-		std::vector<Characteristic> characteristics{};
+		std::unordered_map<std::string, Characteristic> characteristics{};
 		void readCharacteristic(const std::filesystem::path &path);
 	};
 
