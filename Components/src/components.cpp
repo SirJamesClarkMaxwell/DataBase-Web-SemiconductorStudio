@@ -53,15 +53,14 @@ namespace UI::Components
 		ImGui::SameLine();
 		if (ImGui::Button("Sort"))
 		{
-#if 0
-//TODO to be fix as fast it is possible
-			/*
-			auto &map = plotData.characteristics;
+			std::unordered_map<std::string, Characteristic> &map = plotData.characteristics;
 			std::vector<std::pair<std::string, Characteristic>> characteristics(map.begin(), map.end());
 			std::sort(characteristics.begin(), characteristics.end(), [](std::pair<std::string, Characteristic> &a, std::pair<std::string, Characteristic> &b)
 					  { return a.second.getTemperature() < b.second.getTemperature(); });
-			*/
-#endif
+
+			plotData.characteristics.clear();
+			for (std::pair<std::string, Characteristic> &item : characteristics)
+				plotData.characteristics[item.first] = item.second;
 		}
 		ImVec2 plot_size(-1, ImGui::GetContentRegionAvail().x * 0.7f);
 
@@ -144,11 +143,41 @@ namespace UI::Components
 		}
 		for (auto &item : contentBrowserData.contentBrowserData.characteristics)
 		{
+			ImGui::SameLine();
 			ImGui::Checkbox(item.first.c_str(), &item.second.selected);
 			if (item.second.selected)
 				contentBrowserData.plotData.addCharacteristic(item.second);
 			else
 				contentBrowserData.plotData.removeCharacteristic(item.second);
+		}
+		ImGui::Spacing();
+		if (ImGui::BeginTable("Characteristic", 4, contentBrowserData.plotData.flags))
+		{
+			ImGui::TableSetupColumn("Checked");
+			ImGui::TableSetupColumn("Name");
+			ImGui::TableSetupColumn("Temperature");
+			ImGui::TableSetupColumn("Color");
+			ImGui::TableHeadersRow();
+
+			for (auto &item : contentBrowserData.contentBrowserData.characteristics)
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::Checkbox(item.first.c_str(), &item.second.selected);
+				if (item.second.selected)
+					contentBrowserData.plotData.addCharacteristic(item.second);
+				else
+					contentBrowserData.plotData.removeCharacteristic(item.second);
+
+				ImGui::TableNextColumn();
+				ImGui::Text(item.first.c_str());
+				ImGui::TableNextColumn();
+				ImGui::Text(std::to_string(item.second.getTemperature()).c_str());
+				ImGui::TableNextColumn();
+				ImGui::ColorEdit4(item.first.c_str(), (float *)&item.second.m_color, contentBrowserData.plotData.baseFlags);
+			}
+
+			ImGui::EndTable();
 		}
 
 		ImGui::End();

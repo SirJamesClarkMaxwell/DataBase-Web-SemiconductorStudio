@@ -50,6 +50,9 @@ namespace UI::Data
 		Characteristic(Characteristic &&) = default;
 		Characteristic &operator=(Characteristic &&) = default;
 		std::string name;
+		ImVec4 m_color;
+
+		// void setColor(const ImVec4 &color) { m_color = color; };
 
 	private:
 		void resize(int value);
@@ -84,6 +87,10 @@ namespace UI::Data
 		Characteristic operator[](const std::string &name) { return characteristics[name]; };
 		int numberOfCharacteristics = 0;
 		std::unordered_map<std::string, Characteristic> characteristics{};
+		ImGuiTableFlags flags = ImGuiTableFlags_Resizable |
+								ImGuiTableFlags_Sortable |
+								ImGuiTableFlags_ScrollY;
+		ImGuiTableFlags baseFlags = ImGuiTabBarFlags_None;
 	};
 
 	struct ContentBrowserData

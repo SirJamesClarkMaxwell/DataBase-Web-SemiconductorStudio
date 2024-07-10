@@ -88,10 +88,8 @@ void PlotData::addCharacteristic(Characteristic &item)
 
 void PlotData::removeCharacteristic(Characteristic &item)
 {
-    const auto &begin = characteristics.begin();
-    const auto &end = characteristics.end();
     if (checkExistence(characteristics, item.name))
-        characteristics.erase(std::remove(begin, end, item), end);
+        characteristics.erase(item.name);
     item.selected = false;
 }
 
