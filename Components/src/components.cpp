@@ -141,15 +141,36 @@ namespace UI::Components
 			for (auto &item : contentBrowserData.contentBrowserData.characteristics)
 				contentBrowserData.plotData.removeCharacteristic(item.second);
 		}
-		for (auto &item : contentBrowserData.contentBrowserData.characteristics)
-		{
+		auto &plotData = contentBrowserData.plotData;
+
+		ImGui::SameLine();
+		if (ImGui::ColorEdit4("start color", (float *)&plotData.startColor, plotData.colorFlags))
+
 			ImGui::SameLine();
-			ImGui::Checkbox(item.first.c_str(), &item.second.selected);
-			if (item.second.selected)
-				contentBrowserData.plotData.addCharacteristic(item.second);
-			else
-				contentBrowserData.plotData.removeCharacteristic(item.second);
-		}
+		if (ImGui::ColorEdit4("end color", (float *)&plotData.endColor, plotData.colorFlags))
+
+			ImGui::Spacing();
+		ImGui::Spacing();
+
+		ImDrawList *draw_list = ImGui::GetWindowDrawList();
+		ImVec2 gradient_size = ImVec2(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
+
+		ImVec2 p0 = ImGui::GetCursorScreenPos();
+		ImVec2 p1 = ImVec2(p0.x + gradient_size.x, p0.y + gradient_size.y);
+
+		// Ensure conversion to ImU32
+		ImVec4 col_a = plotData.startColor.Value;
+		ImVec4 col_b = plotData.endColor.Value;
+
+		ImU32 col_a_ = ImGui::GetColorU32(IM_COL32(col_a.x,col_a.y,col_a.z,col_a.w));
+		ImU32 col_b_ = ImGui::GetColorU32(IM_COL32(col_b.x,col_b.y,col_b.z,col_b.w));
+		draw_list->AddRectFilledMultiColor(p0, p1, col_a_, col_b_, col_b_, col_a_);
+		std::cout << "Bad one " << "col A " << col_a_ << " col B " << col_b_ << std::endl;
+		std::cout << "Right one " << " col A " << ImGui::GetColorU32(IM_COL32(255, 0, 0, 255)) << " col B " << ImGui::GetColorU32(IM_COL32(0, 0, 255, 255)) << std::endl;
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
 		ImGui::Spacing();
 		if (ImGui::BeginTable("Characteristic", 4, contentBrowserData.plotData.flags))
 		{
@@ -174,7 +195,7 @@ namespace UI::Components
 				ImGui::TableNextColumn();
 				ImGui::Text(std::to_string(item.second.getTemperature()).c_str());
 				ImGui::TableNextColumn();
-				ImGui::ColorEdit4(item.first.c_str(), (float *)&item.second.m_color, contentBrowserData.plotData.baseFlags);
+				ImGui::ColorEdit4(item.first.c_str(), (float *)&item.second.m_color, contentBrowserData.plotData.colorFlags);
 			}
 
 			ImGui::EndTable();

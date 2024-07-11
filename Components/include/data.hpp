@@ -91,6 +91,9 @@ namespace UI::Data
 								ImGuiTableFlags_Sortable |
 								ImGuiTableFlags_ScrollY;
 		ImGuiTableFlags baseFlags = ImGuiTabBarFlags_None;
+		ImGuiColorEditFlags colorFlags = ImGuiColorEditFlags_None | ImGuiColorEditFlags_NoInputs;
+		ImColor startColor;
+		ImColor endColor;
 	};
 
 	struct ContentBrowserData
