@@ -41,7 +41,7 @@ namespace UI::Components
 		ImGui::ShowDemoWindow();
 		*/
 	}
-	bool operator==(const std::pair<std::string, Characteristic> &lhs, const std::pair<std::string, Characteristic> &rhs) { return lhs.first == rhs.first; };
+	bool operator==(const Characteristic &lhs, const Characteristic &rhs) { return lhs.getTemperature() == rhs.getTemperature(); };
 	void drawPlots(Data::DataPreview &dataPreview)
 	{
 		using namespace UI::Data;
@@ -52,17 +52,12 @@ namespace UI::Components
 		ImGui::CheckboxFlags("ImPlotAxisFlags_AutoFit##X", (unsigned int *)&plot_flags, ImPlotAxisFlags_AutoFit);
 		ImGui::SameLine();
 		if (ImGui::Button("Sort"))
-		{
-#if 0
-//TODO to be fix as fast it is possible
-			/*
-			auto &map = plotData.characteristics;
-			std::vector<std::pair<std::string, Characteristic>> characteristics(map.begin(), map.end());
-			std::sort(characteristics.begin(), characteristics.end(), [](std::pair<std::string, Characteristic> &a, std::pair<std::string, Characteristic> &b)
-					  { return a.second.getTemperature() < b.second.getTemperature(); });
-			*/
-#endif
-		}
+			std::sort(plotData.characteristics.begin(), plotData.characteristics.end(), [](Characteristic &a, Characteristic &b)
+					  { return a.getTemperature() < b.getTemperature(); });
+
+		if (ImGui::Button("Reverse"))
+			std::reverse(plotData.characteristics.begin(), plotData.characteristics.end());
+
 		ImVec2 plot_size(-1, ImGui::GetContentRegionAvail().x * 0.7f);
 
 		if (!ImGui::GetIO().KeyCtrl && ImGui::GetScrollMaxY() > 0)
@@ -79,7 +74,8 @@ namespace UI::Components
 			if (!plotData.plotProperties.lin_y_scale)
 				ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Linear);
 			for (auto &item : plotData.characteristics)
-				plotOneCharacteristic(item.second);
+				if (item)
+					plotOneCharacteristic(item);
 
 			ImPlot::EndPlot();
 		}
@@ -106,7 +102,15 @@ namespace UI::Components
 
 		if (ImGui::Button("Read all"))
 			readAllDataFromDirectory(contentBrowserData.rootPath, contentBrowserData.currentPath, contentBrowserData.contentBrowserData);
-
+		ImGui::SameLine();
+		if (ImGui::Button("Transfer Read data to Plot"))
+		{
+			for (auto &item : contentBrowserData.contentBrowserData.characteristics)
+			{
+				if (checkExistence(contentBrowserData.plotData.characteristics, item.name))
+					contentBrowserData.plotData.characteristics.push_back(item);
+			}
+		}
 		if (contentBrowserData.currentPath != std::filesystem::path(contentBrowserData.rootPath))
 		{
 			if (ImGui::Button("<-"))
@@ -133,22 +137,72 @@ namespace UI::Components
 
 		if (ImGui::Button("Plot all"))
 		{
-			for (auto &item : contentBrowserData.contentBrowserData.characteristics)
-				contentBrowserData.plotData.addCharacteristic(item.second);
+			for (Characteristic &item : contentBrowserData.contentBrowserData.characteristics)
+				contentBrowserData.plotData.addCharacteristic(item);
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Remove All"))
 		{
-			for (auto &item : contentBrowserData.contentBrowserData.characteristics)
-				contentBrowserData.plotData.removeCharacteristic(item.second);
+			for (Characteristic &item : contentBrowserData.contentBrowserData.characteristics)
+				item.selected = false;
 		}
-		for (auto &item : contentBrowserData.contentBrowserData.characteristics)
+		auto &plotData = contentBrowserData.plotData;
+
+		ImGui::SameLine();
+		if (ImGui::ColorEdit4("start color", (float *)&plotData.startColor, plotData.colorFlags))
 		{
-			ImGui::Checkbox(item.first.c_str(), &item.second.selected);
-			if (item.second.selected)
-				contentBrowserData.plotData.addCharacteristic(item.second);
-			else
-				contentBrowserData.plotData.removeCharacteristic(item.second);
+		}
+		ImGui::SameLine();
+		if (ImGui::ColorEdit4("end color", (float *)&plotData.endColor, plotData.colorFlags))
+		{
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Update Characteristics Color"))
+		{
+		}
+		ImGui::SameLine();
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		ImDrawList *draw_list = ImGui::GetWindowDrawList();
+		ImVec2 gradient_size = ImVec2(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
+
+		ImVec2 p0 = ImGui::GetCursorScreenPos();
+		ImVec2 p1 = ImVec2(p0.x + gradient_size.x, p0.y + gradient_size.y);
+
+		ImU32 col_a_ = ImGui::ColorConvertFloat4ToU32(plotData.startColor);
+		ImU32 col_b_ = ImGui::ColorConvertFloat4ToU32(plotData.endColor);
+		draw_list->AddRectFilledMultiColor(p0, p1, col_a_, col_b_, col_b_, col_a_);
+
+		ImGui::Dummy(ImVec2(0.0f, ImGui::GetFrameHeight()));
+		if (ImGui::BeginTable("Characteristic", 4, contentBrowserData.plotData.flags))
+		{
+			ImGui::TableSetupColumn("Checked");
+			ImGui::TableSetupColumn("Name");
+			ImGui::TableSetupColumn("Temperature");
+			ImGui::TableSetupColumn("Color");
+			ImGui::TableHeadersRow();
+
+			for (auto &item : contentBrowserData.plotData.characteristics)
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::Checkbox(item.name.c_str(), &item.selected);
+/*
+				if (item.selected)
+					contentBrowserData.plotData.addCharacteristic(item);
+				else
+					contentBrowserData.plotData.removeCharacteristic(item);
+*/
+				ImGui::TableNextColumn();
+				ImGui::Text(item.name.c_str());
+				ImGui::TableNextColumn();
+				ImGui::Text(std::to_string(item.getTemperature()).c_str());
+				ImGui::TableNextColumn();
+				ImGui::ColorEdit4(item.name.c_str(), (float *)&item.m_color, contentBrowserData.plotData.colorFlags);
+			}
+
+			ImGui::EndTable();
 		}
 
 		ImGui::End();

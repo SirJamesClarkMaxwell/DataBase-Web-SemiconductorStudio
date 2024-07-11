@@ -37,11 +37,12 @@ namespace UI::Data
 		std::vector<double> getLogCurrent();
 		std::vector<double> getDensityCurrent() { return J; };
 		double getTemperature() { return m_temperature; };
-
+		const double getTemperature() const { return m_temperature; };
 		bool comparePath(const Characteristic &other) { return this->m_path == other.m_path; };
 		bool operator==(const Characteristic &other) const { return this->m_temperature == other.m_temperature; };
 		bool operator!=(const Characteristic &other) const { return this->m_temperature != other.m_temperature; };
 		bool operator<(const Characteristic &other) const { return this->m_temperature < other.m_temperature; };
+		operator bool() { return selected; };
 		bool selected{true};
 
 		Characteristic(const Characteristic &) = default;
@@ -50,6 +51,10 @@ namespace UI::Data
 		Characteristic(Characteristic &&) = default;
 		Characteristic &operator=(Characteristic &&) = default;
 		std::string name;
+		// ImVec4 m_color;
+		ImColor m_color;
+
+		// void setColor(const ImVec4 &color) { m_color = color; };
 
 	private:
 		void resize(int value);
@@ -65,7 +70,7 @@ namespace UI::Data
 		std::vector<double> J{};
 		double m_temperature{};
 	};
-	bool checkExistence(const std::unordered_map<std::string, Characteristic> &destination, const std::string &item);
+	bool checkExistence(const std::vector <Characteristic> &destination, const std::string& item);
 
 	struct PlotProperties
 	{
@@ -73,6 +78,7 @@ namespace UI::Data
 		bool lin_x_scale = true;
 		bool lin_y_scale = false;
 		std::pair<std::string, std::string> axis{"V", "I"};
+		std::vector<ImColor> colors;
 		// ImGuiPlotFlags plotFlags
 	};
 	struct PlotData
@@ -81,15 +87,32 @@ namespace UI::Data
 		PlotProperties plotProperties{};
 		void addCharacteristic(Characteristic &item);
 		void removeCharacteristic(Characteristic &item);
-		Characteristic operator[](const std::string &name) { return characteristics[name]; };
+		Characteristic &operator[](const std::string &name)
+		{
+			auto it = std::find_if(characteristics.begin(), characteristics.end(),
+								   [&name](const Characteristic &element)
+								   {
+									   return element.name== name;
+								   });
+			if (it != characteristics.end())
+				return *it;
+
+		};
 		int numberOfCharacteristics = 0;
-		std::unordered_map<std::string, Characteristic> characteristics{};
+		std::vector< Characteristic> characteristics{};
+		ImGuiTableFlags flags = ImGuiTableFlags_Resizable |
+								ImGuiTableFlags_Sortable |
+								ImGuiTableFlags_ScrollY;
+		ImGuiTableFlags baseFlags = ImGuiTabBarFlags_None;
+		ImGuiColorEditFlags colorFlags = ImGuiColorEditFlags_DefaultOptions_ | ImGuiColorEditFlags_None | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_InputRGB;
+		ImColor startColor{1, 0, 0};
+		ImColor endColor{0, 0, 1};
 	};
 
 	struct ContentBrowserData
 	{
 		ContentBrowserData() = default;
-		std::unordered_map<std::string, Characteristic> characteristics{};
+		std::vector<Characteristic> characteristics{};
 		void readCharacteristic(const std::filesystem::path &path);
 	};
 
