@@ -1,0 +1,46 @@
+
+
+{
+    "users": {
+        "columns": [
+            "user_name", 
+            "user_password", 
+            "storage_extension_id"],
+        "foreign_keys": [
+            "storage_extension_id"]
+    },
+    "storage_extension": {
+        "columns": [
+            "user_id", 
+            "storage_extension_id", 
+            "storage_id"],
+        "foreign_keys": [
+            "user_id",  
+            "storage_id"]
+    },
+    "storage_": {
+        "columns": [
+            "storage_id", 
+            "storage_name"
+]
+
+    },
+    "mesurement": {
+        "columns": [
+            "mesurement_id", 
+            "mesurement", 
+            "next_mesurement"],
+        "foreign_keys": [
+            "next_mesurement"]
+    },
+    "mesurement_attribute": {
+        "columns": [
+            "mesurement_attribute_id", 
+            "value", 
+            "temperature",
+            "mesurement_extension_id"],
+        "foreign_keys": [
+            "mesurement_extension_id"]
+    }
+}
+
