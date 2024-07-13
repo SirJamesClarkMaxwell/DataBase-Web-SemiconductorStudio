@@ -172,10 +172,14 @@ namespace UI::Components
 		ImGui::SameLine();
 		if (ImGui::ColorEdit4("start color", (float *)&plotData.startColor, plotData.colorFlags))
 		{
+			plotData.setColorsOfCharacteristics();
+			plotData.setColorsOfGraph();
 		}
 		ImGui::SameLine();
 		if (ImGui::ColorEdit4("end color", (float *)&plotData.endColor, plotData.colorFlags))
 		{
+			plotData.setColorsOfCharacteristics();
+			plotData.setColorsOfGraph();
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Update Characteristics Color"))
@@ -185,20 +189,20 @@ namespace UI::Components
 
 			// static std::vector<ImU32> colorMap;
 
-			if (plotData.characteristics.size() > 1)
-			{
-				auto func = [&](const ImColor &item)
-				{
-					return ImGui::ColorConvertFloat4ToU32(item);
-				};
+			// if (plotData.characteristics.size() > 1)
+			// {
+			// 	auto func = [&](const ImColor &item)
+			// 	{
+			// 		return ImGui::ColorConvertFloat4ToU32(item);
+			// 	};
 
-				plotData.plotProperties.colorMap.resize(plotData.plotProperties.colors.size());
-				std::transform(plotData.plotProperties.colors.begin(), plotData.plotProperties.colors.end(), plotData.plotProperties.colorMap.begin(), func);
-				plotData.plotProperties.colorMapPointer = plotData.plotProperties.colorMap.data();
-				plotData.plotProperties.addedColorMap = -1;
-				const ImColor diff = plotData.endColor - plotData.startColor;
-				plotData.plotProperties.name = ImGui::ColorConvertFloat4ToU32(diff);
-			}
+			// 	plotData.plotProperties.colorMap.resize(plotData.plotProperties.colors.size());
+			// 	std::transform(plotData.plotProperties.colors.begin(), plotData.plotProperties.colors.end(), plotData.plotProperties.colorMap.begin(), func);
+			// 	plotData.plotProperties.colorMapPointer = plotData.plotProperties.colorMap.data();
+			// 	plotData.plotProperties.addedColorMap = -1;
+			// 	const ImColor diff = plotData.endColor - plotData.startColor;
+			// 	plotData.plotProperties.name = ImGui::ColorConvertFloat4ToU32(diff);
+			// }
 		}
 		ImGui::SameLine();
 		ImGui::Spacing();
