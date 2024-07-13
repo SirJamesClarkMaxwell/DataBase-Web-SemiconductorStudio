@@ -6,7 +6,7 @@ import hashlib
 import base64
 import uuid
 import bcrypt
-
+import uuid
 
 load_dotenv()
 
@@ -121,7 +121,7 @@ class Manager:
         storage_id = str(uuid.uuid4())
         print(storage_id)
         try:
-            print("here")
+            
             self.cursor.execute(f"INSERT INTO test.users (user_id, user_name, user_password) VALUES(%s, %s, %s);", (user_id, username, hashed_password))
             self.cursor.execute(f"INSERT INTO test.storage_ (storage_id, storage_name) VALUES(%s, %s);", (storage_id, 'default_storage'))
             self.cursor.execute(f"INSERT INTO test.storage_extension (storage_extension_id, user_id_extension, storage_id) VALUES(%s, %s, %s);", (storage_extension_id, user_id, storage_id))
@@ -142,7 +142,8 @@ class Manager:
         
         return binascii.hexlify(os.urandom(20)).decode()
 
-
+    def generate_uuid(self)->str:
+        return str(uuid.uuid4())
 
     def get_hashed_password(self, plain_text_password):
     # Hash a password for the first time
@@ -172,7 +173,7 @@ class Manager:
         if not isinstance(tablename, str) or not tablename.isidentifier():
             raise ValueError("Invalid table name.")
 
-        query = f"SELECT {columns} FROM {tablename} WHERE {column_name}='{identifier}';"
+        query = f"SELECT {columns} FROM {tablename} WHERE {column_name} ='{identifier}';"
         
         try:
 
@@ -185,7 +186,52 @@ class Manager:
             print(f"Error: {error}")
             return None
 
+    def initialize_mesurement(self,  storage_name, temperature, characteristic)->None:
+        '''
+        z  tablicy storage_ dodajemy id do mesurement oraz mesurement_attribute i extension
+        rozróżnienie trybu view i ten drugi
+        '''
 
+        attribute1 = self.generate_uuid()
+
+        mes_tablename = self.generate_uuid()
+        
+
+        storage_id = self.get_from_db("storage_", "storage_name", storage_name, "storage_id")
+        query_attribute1 = f"INSERT INTO  measurement_attribute (value, measurement_attribute_id, temperature, measurement_table_name, stoarge_id) VALUES ('{characteristic}', '{attribute1}', {temperature}, '{mes_tablename}', '{storage_id}');"
+        mes_query = f"""
+            CREATE TABLE {mes_tablename} (
+                measurement_id SERIAL PRIMARY KEY, 
+                measurement FLOAT, 
+                next_measurement_id uuid 
+            );
+            """
+        
+        try:
+            self.cursor.execute(query_attribute1)
+            self.cursor.execute(mes_query)
+            self.conn.commit()
+            
+
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+    def change_storage_name(self, storage_name, previous_storage_name)->str:
+        change_name_query = f"UPDATE test.storage_ SET storage_name = '{storage_name}' WHERE storage_name = '{previous_storage_name}';"
+        try:
+            self.cursor.execute(change_name_query)
+            self.conn.commit()
+
+            return "succesfulyl changed storage name"
+            
+
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        
+    def insert_mesurements(self)->None:
+        pass
+    
     def close_conn(self)->None:
         '''
         closing connection to database

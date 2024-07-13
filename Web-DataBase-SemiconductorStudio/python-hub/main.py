@@ -6,6 +6,9 @@ import shutil
 from dbmanager import Manager
 
 
+
+
+
 # login (GET)
 
 # save (POST)
@@ -55,7 +58,10 @@ def registerUser():
 @app.route('/API/login', methods=['GET'])
 def loginUser():
     '''
+
+
     This method should also return token for further user authorizations
+
     
     '''
     try:
@@ -74,8 +80,23 @@ def loginUser():
         print(f"Error: {e}")
         return jsonify({"error": "Failed to login user"}), 500
 
+@app.route('/API/getTable', methods = ['GET'])
+def insertMesurement():
+    try:
+        data = request.json
 
+        tablename = data.get('tablename')
+        column_name = data.get('column_name')
+        identifier = data.get('identifier')
+        columns2get = data.get('columns2get')
+        mng.get_conn()
 
+        results = mng.get_from_db(tablename, column_name, identifier, columns2get)
+        return jsonify({"message": "Got requested data from database", "data": results}), 201
+    
+    except Exception as e:
+        return jsonify({"error": "Failed to get data"}), 500
+    
 
 @app.route('/API/save', methods=['POST'])
 def saveCred():
@@ -90,7 +111,21 @@ def saveCred():
 
 @app.route('/API/createMesurement', methods=['POST'])
 def insertMes():
-    pass
+    data = request.json
+
+    storage_name = data.get('storage_name')
+    temperature = data.get("temperature")
+    characteristic = data.get("characteristic")
+    try:
+        mng.get_conn()
+
+        mng.initialize_mesurement(storage_name, temperature, characteristic)
+
+        return jsonify({"message": "Properly created mesurement table"}), 201
+
+    except Exception as e:
+        return jsonify({"error": "Failed to get data"}), 500
+    
 
 
 @app.route('/API/updateRec', methods = ['POST'])
