@@ -6,7 +6,7 @@ workspace "Web-DataBase-SemiconductorStudio"
 	configurations { "Debug", "Release" }
 	platforms { "x86", "x86_64" }
 	language "C++"
-	cppdialect "C++20"
+	cppdialect "C++latest"
 
 	location "./"
 

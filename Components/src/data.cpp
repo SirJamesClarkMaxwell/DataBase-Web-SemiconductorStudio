@@ -2,6 +2,22 @@
 #include "data.hpp"
 using namespace UI::Data;
 
+void UI::Data::Characteristic::readData()
+{
+    std::string pathString = m_path.string();
+    m_temperature = read_temperature(pathString);
+    name = m_path.filename().string();
+    json readCharacteristic;
+    try
+    {
+        readCharacteristic = createJSONObject(pathString);
+        from_json(readCharacteristic, *this);
+    }
+    catch (const std::exception &e)
+    {
+    }
+}
+
 std::vector<double> Characteristic::getLogCurrent()
 {
     auto logf = [](double I)
@@ -11,13 +27,13 @@ std::vector<double> Characteristic::getLogCurrent()
     return logI;
 }
 
-bool UI::Data::checkExistence(const std::vector <Characteristic > &destination, const std::string& item)
+bool UI::Data::checkExistence(const std::vector<Characteristic> &destination, const std::string &item)
 {
     std::find_if(destination.begin(), destination.end(),
-        [&item](const Characteristic& element)
-        {
-            return element.name== item;
-        });
+                 [&item](const Characteristic &element)
+                 {
+                     return element.name == item;
+                 });
     return true;
 }
 
@@ -85,7 +101,7 @@ void PlotData::addCharacteristic(Characteristic &item)
     if (!checkExistence(characteristics, item.name))
 
         characteristics.push_back(item);
-    
+
     item.selected = true;
 }
 
@@ -98,6 +114,34 @@ void PlotData::removeCharacteristic(Characteristic &item)
             characteristics.erase(it);
     }
     item.selected = false;
+}
+
+Characteristic &UI::Data::PlotData::operator[](const std::string &name)
+{
+
+    auto it = std::find_if(characteristics.begin(), characteristics.end(),
+                           [&name](const Characteristic &element)
+                           {
+                               return element.name == name;
+                           });
+    if (it != characteristics.end())
+        return *it;
+}
+
+void UI::Data::PlotData::setColorsOfGraph()
+{
+    ImColor colorStep = (endColor - startColor) / characteristics.size();
+    auto &characs = characteristics;
+    for (const auto &[index, item] : std::views::enumerate(characteristics))
+        item.m_color = startColor + index * colorStep;
+}
+
+void UI::Data::PlotData::setColorsOfCharacteristics()
+{
+    plotProperties.colors.clear();
+    plotProperties.colors.resize(characteristics.size());
+    std::transform(characteristics.begin(), characteristics.end(), plotProperties.colors.begin(), [&](const Characteristic &item)
+                   { return item.m_color; });
 }
 
 void ContentBrowserData::readCharacteristic(const std::filesystem::path &path)

@@ -17,21 +17,7 @@ namespace UI::Data
 		Characteristic() = default;
 		Characteristic(std::filesystem::path path)
 			: m_path(path) { readData(); };
-		void readData()
-		{
-			std::string pathString = m_path.string();
-			m_temperature = read_temperature(pathString);
-			name = m_path.filename().string();
-			json readCharacteristic;
-			try
-			{
-				readCharacteristic = createJSONObject(pathString);
-				from_json(readCharacteristic, *this);
-			}
-			catch (const std::exception &e)
-			{
-			}
-		};
+		void readData();
 		std::vector<double> getVoltage() { return V; };
 		std::vector<double> getCurrent() { return I; };
 		std::vector<double> getLogCurrent();
@@ -70,7 +56,7 @@ namespace UI::Data
 		std::vector<double> J{};
 		double m_temperature{};
 	};
-	bool checkExistence(const std::vector <Characteristic> &destination, const std::string& item);
+	bool checkExistence(const std::vector<Characteristic> &destination, const std::string &item);
 
 	struct PlotProperties
 	{
@@ -79,6 +65,9 @@ namespace UI::Data
 		bool lin_y_scale = false;
 		std::pair<std::string, std::string> axis{"V", "I"};
 		std::vector<ImColor> colors;
+		std::vector<ImU32> colorMap;
+		ImU32 *colorMapPointer;
+		int customRGMMap;
 		// ImGuiPlotFlags plotFlags
 	};
 	struct PlotData
@@ -87,19 +76,11 @@ namespace UI::Data
 		PlotProperties plotProperties{};
 		void addCharacteristic(Characteristic &item);
 		void removeCharacteristic(Characteristic &item);
-		Characteristic &operator[](const std::string &name)
-		{
-			auto it = std::find_if(characteristics.begin(), characteristics.end(),
-								   [&name](const Characteristic &element)
-								   {
-									   return element.name== name;
-								   });
-			if (it != characteristics.end())
-				return *it;
-
-		};
+		Characteristic &operator[](const std::string &name);
+		void setColorsOfGraph();
+		void setColorsOfCharacteristics();
 		int numberOfCharacteristics = 0;
-		std::vector< Characteristic> characteristics{};
+		std::vector<Characteristic> characteristics{};
 		ImGuiTableFlags flags = ImGuiTableFlags_Resizable |
 								ImGuiTableFlags_Sortable |
 								ImGuiTableFlags_ScrollY;

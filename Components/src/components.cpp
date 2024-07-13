@@ -2,6 +2,9 @@
 #include "components.hpp"
 #include "data.hpp"
 #include <filesystem>
+#include <ranges>
+#include <algorithm>
+
 namespace UI::Components
 {
 
@@ -65,20 +68,24 @@ namespace UI::Components
 
 		static ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerV;
 		std::tuple<std::string, std::string> axisProperties = plotData.plotProperties.axis;
-		if (ImPlot::BeginPlot("testing Plot", plot_size, plot_flags))
-		{
-			// setupPlot(plot_flags, plotData);
-			ImPlot::SetupAxes("V", "I", plot_flags, plot_flags);
-			if (!plotData.plotProperties.lin_x_scale)
-				ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Linear);
-			if (!plotData.plotProperties.lin_y_scale)
-				ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Linear);
-			for (auto &item : plotData.characteristics)
-				if (item)
-					plotOneCharacteristic(item);
+		if (plotData.plotProperties.colors.size() > 1)
+			ImPlot::PushColormap(plotData.plotProperties.customRGMMap);
 
-			ImPlot::EndPlot();
-		}
+		ImPlot::BeginPlot("testing Plot", plot_size, plot_flags);
+
+		// setupPlot(plot_flags, plotData);
+		ImPlot::SetupAxes("V", "I", plot_flags, plot_flags);
+		if (!plotData.plotProperties.lin_x_scale)
+			ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Linear);
+		if (!plotData.plotProperties.lin_y_scale)
+			ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Linear);
+		for (auto &item : plotData.characteristics)
+			if (item)
+				plotOneCharacteristic(item);
+
+		ImPlot::EndPlot();
+		if (plotData.plotProperties.colors.size() > 0)
+			ImPlot::PopColormap();
 	}
 	void plotOneCharacteristic(UI::Data::Characteristic &characteristic)
 	{
@@ -159,6 +166,25 @@ namespace UI::Components
 		ImGui::SameLine();
 		if (ImGui::Button("Update Characteristics Color"))
 		{
+			plotData.setColorsOfCharacteristics();
+			plotData.setColorsOfGraph();
+			// static std::vector<ImU32> colorMap;
+
+			if (plotData.characteristics.size() > 1)
+			{
+				auto func = [&](const ImColor &item)
+				{
+					return ImGui::ColorConvertFloat4ToU32(item);
+				};
+
+				plotData.plotProperties.colorMap.resize(plotData.plotProperties.colors.size()); // Resize the vector to match the input size
+				std::transform(plotData.plotProperties.colors.begin(), plotData.plotProperties.colors.end(), plotData.plotProperties.colorMap.begin(), func);
+
+				plotData.plotProperties.colorMapPointer = plotData.plotProperties.colorMap.data(); // Use data() to get pointer to the underlying array
+				int customRGBMap = ImPlot::GetColormapIndex("RGBColors");
+				if (customRGBMap == -1)
+					customRGBMap = ImPlot::AddColormap("RGBColors", plotData.plotProperties.colorMapPointer, plotData.plotProperties.colorMap.size());
+			}
 		}
 		ImGui::SameLine();
 		ImGui::Spacing();
@@ -188,12 +214,6 @@ namespace UI::Components
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
 				ImGui::Checkbox(item.name.c_str(), &item.selected);
-/*
-				if (item.selected)
-					contentBrowserData.plotData.addCharacteristic(item);
-				else
-					contentBrowserData.plotData.removeCharacteristic(item);
-*/
 				ImGui::TableNextColumn();
 				ImGui::Text(item.name.c_str());
 				ImGui::TableNextColumn();
@@ -221,73 +241,4 @@ namespace UI::Components
 				contentBrowserData.readCharacteristic(path);
 		}
 	};
-	struct TableRow
-	{
-		std::string column1;
-		std::string column2;
-		std::string column3;
-	};
-	void ShowSelectableTable()
-	{
-		static std::vector<TableRow> rows = {
-			{"Row 1 Col 1", "Row 1 Col 2", "Row 1 Col 3"},
-			{"Row 2 Col 1", "Row 2 Col 2", "Row 2 Col 3"},
-			{"Row 3 Col 1", "Row 3 Col 2", "Row 3 Col 3"},
-			{"Row 4 Col 1", "Row 4 Col 2", "Row 4 Col 3"}};
-		static int selected = -1;
-
-		ImGui::Begin("Selectable Table");
-
-		if (ImGui::BeginTable("##table", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))
-		{
-			ImGui::TableSetupColumn("Column 1");
-			ImGui::TableSetupColumn("Column 2");
-			ImGui::TableSetupColumn("Column 3");
-			ImGui::TableHeadersRow();
-
-			for (int row = 0; row < rows.size(); row++)
-			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				for (int column = 0; column < 3; column++)
-				{
-					ImGui::TableSetColumnIndex(column);
-					std::string cellValue = (column == 0) ? rows[row].column1 : (column == 1) ? rows[row].column2
-																							  : rows[row].column3;
-
-					if (ImGui::Selectable(cellValue.c_str(), selected == row))
-					{
-						selected = row; // Update the selected row
-					}
-				}
-			}
-			ImGui::EndTable();
-		}
-
-		ImGui::End();
-	}
-	void Demo_LinePlots()
-	{
-		static float xs1[1001], ys1[1001];
-		for (int i = 0; i < 1001; ++i)
-		{
-			xs1[i] = i * 0.001f;
-			ys1[i] = 0.5f + 0.5f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
-		}
-		static double xs2[20], ys2[20];
-		for (int i = 0; i < 20; ++i)
-		{
-			xs2[i] = i * 1 / 19.0f;
-			ys2[i] = xs2[i] * xs2[i];
-		}
-		if (ImPlot::BeginPlot("Line Plots"))
-		{
-			ImPlot::SetupAxes("x", "y");
-			ImPlot::PlotLine("f(x)", xs1, ys1, 1001);
-			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
-			ImPlot::PlotLine("g(x)", xs2, ys2, 20, ImPlotLineFlags_Segments);
-			ImPlot::EndPlot();
-		}
-	}
 };
