@@ -29,12 +29,13 @@ std::vector<double> Characteristic::getLogCurrent()
 
 bool UI::Data::checkExistence(const std::vector<Characteristic> &destination, const std::string &item)
 {
-    std::find_if(destination.begin(), destination.end(),
-                 [&item](const Characteristic &element)
-                 {
-                     return element.name == item;
-                 });
-    return true;
+    auto found = std::find_if(destination.begin(), destination.end(),
+                              [&item](const Characteristic &element)
+                              {
+                                  return element.name == item;
+                              });
+    bool f = found != destination.end();
+    return f;
 }
 
 void Characteristic::resize(int value)
@@ -128,17 +129,15 @@ Characteristic &UI::Data::PlotData::operator[](const std::string &name)
         return *it;
 }
 
-void UI::Data::PlotData::setColorsOfGraph()
+void UI::Data::PlotData::setColorsOfCharacteristics()
 {
-    ImColor colorStep = (endColor - startColor) / characteristics.size();
-    auto &characs = characteristics;
+    ImColor colorStep = (endColor - startColor) / (characteristics.size() - 1);
     for (const auto &[index, item] : std::views::enumerate(characteristics))
         item.m_color = startColor + index * colorStep;
 }
 
-void UI::Data::PlotData::setColorsOfCharacteristics()
+void UI::Data::PlotData::setColorsOfGraph()
 {
-    plotProperties.colors.clear();
     plotProperties.colors.resize(characteristics.size());
     std::transform(characteristics.begin(), characteristics.end(), plotProperties.colors.begin(), [&](const Characteristic &item)
                    { return item.m_color; });
@@ -147,6 +146,6 @@ void UI::Data::PlotData::setColorsOfCharacteristics()
 void ContentBrowserData::readCharacteristic(const std::filesystem::path &path)
 {
     Characteristic characteristic(path);
-    if (checkExistence(characteristics, characteristic.name))
+    if (!checkExistence(characteristics, characteristic.name))
         characteristics.push_back(characteristic);
 }

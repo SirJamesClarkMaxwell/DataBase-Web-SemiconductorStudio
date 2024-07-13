@@ -68,6 +68,8 @@ namespace UI::Data
 		std::vector<ImU32> colorMap;
 		ImU32 *colorMapPointer;
 		int customRGMMap;
+		int addedColorMap{1};
+		ImU32 name;
 		// ImGuiPlotFlags plotFlags
 	};
 	struct PlotData

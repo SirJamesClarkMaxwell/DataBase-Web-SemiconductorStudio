@@ -36,6 +36,8 @@ namespace UI::Components
 		/*
 		ImGui::Begin("Advanced Table");
 		Demo_LinePlots();
+		*/
+		/*
 		drawAdvancedTable();
 		ImGui::Text("Hello World");
 		ImGui::End();
@@ -68,11 +70,20 @@ namespace UI::Components
 
 		static ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerV;
 		std::tuple<std::string, std::string> axisProperties = plotData.plotProperties.axis;
-		if (plotData.plotProperties.colors.size() > 1)
-			ImPlot::PushColormap(plotData.plotProperties.customRGMMap);
 
+		PlotProperties &plotProperties = plotData.plotProperties;
+		/*
+				ImU32 &name = plotProperties.name;
+				if (plotProperties.addedColorMap == -1 && plotProperties.colors.size() > 0)
+				{
+					plotProperties.customRGMMap = ImPlot::AddColormap(std::to_string(name).c_str(), plotProperties.colorMapPointer, plotProperties.colorMap.size());
+					plotProperties.addedColorMap = 1;
+				}
+
+				if (plotProperties.colors.size() > 0)
+					ImPlot::PushColormap(plotProperties.customRGMMap);
+		*/
 		ImPlot::BeginPlot("testing Plot", plot_size, plot_flags);
-
 		// setupPlot(plot_flags, plotData);
 		ImPlot::SetupAxes("V", "I", plot_flags, plot_flags);
 		if (!plotData.plotProperties.lin_x_scale)
@@ -84,14 +95,17 @@ namespace UI::Components
 				plotOneCharacteristic(item);
 
 		ImPlot::EndPlot();
-		if (plotData.plotProperties.colors.size() > 0)
+		/*
+		if (plotData.plotProperties.colors.size() > 1)
 			ImPlot::PopColormap();
+		*/
 	}
 	void plotOneCharacteristic(UI::Data::Characteristic &characteristic)
 	{
 		auto V = characteristic.getVoltage();
 		auto I = characteristic.getLogCurrent();
 		std::string title = "I(V) " + std::to_string(characteristic.getTemperature()) + " K";
+		ImPlot::SetNextLineStyle(characteristic.m_color);
 		ImPlot::PlotLine(title.c_str(), V.data(), I.data(), V.size());
 	}
 	void setupPlot(ImPlotFlags plot_flags, UI::Data::PlotData &plotData)
@@ -114,7 +128,7 @@ namespace UI::Components
 		{
 			for (auto &item : contentBrowserData.contentBrowserData.characteristics)
 			{
-				if (checkExistence(contentBrowserData.plotData.characteristics, item.name))
+				if (!checkExistence(contentBrowserData.plotData.characteristics, item.name))
 					contentBrowserData.plotData.characteristics.push_back(item);
 			}
 		}
@@ -168,6 +182,7 @@ namespace UI::Components
 		{
 			plotData.setColorsOfCharacteristics();
 			plotData.setColorsOfGraph();
+
 			// static std::vector<ImU32> colorMap;
 
 			if (plotData.characteristics.size() > 1)
@@ -177,13 +192,12 @@ namespace UI::Components
 					return ImGui::ColorConvertFloat4ToU32(item);
 				};
 
-				plotData.plotProperties.colorMap.resize(plotData.plotProperties.colors.size()); // Resize the vector to match the input size
+				plotData.plotProperties.colorMap.resize(plotData.plotProperties.colors.size());
 				std::transform(plotData.plotProperties.colors.begin(), plotData.plotProperties.colors.end(), plotData.plotProperties.colorMap.begin(), func);
-
-				plotData.plotProperties.colorMapPointer = plotData.plotProperties.colorMap.data(); // Use data() to get pointer to the underlying array
-				int customRGBMap = ImPlot::GetColormapIndex("RGBColors");
-				if (customRGBMap == -1)
-					customRGBMap = ImPlot::AddColormap("RGBColors", plotData.plotProperties.colorMapPointer, plotData.plotProperties.colorMap.size());
+				plotData.plotProperties.colorMapPointer = plotData.plotProperties.colorMap.data();
+				plotData.plotProperties.addedColorMap = -1;
+				const ImColor diff = plotData.endColor - plotData.startColor;
+				plotData.plotProperties.name = ImGui::ColorConvertFloat4ToU32(diff);
 			}
 		}
 		ImGui::SameLine();
@@ -241,4 +255,57 @@ namespace UI::Components
 				contentBrowserData.readCharacteristic(path);
 		}
 	};
+
+	void Demo_LinePlots()
+	{
+		static float xs1[1001], ys1[1001];
+		for (int i = 0; i < 1001; ++i)
+		{
+			xs1[i] = i * 0.001f;
+			ys1[i] = 0.5f + 0.5f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
+		}
+
+		static float xs3[1001], ys3[1001];
+		for (int i = 0; i < 1001; ++i)
+		{
+			xs3[i] = i * 0.001f;
+			ys3[i] = 0.5f + 0.5f * sinf(50 * (xs3[i] + (float)ImGui::GetTime() / 5));
+		}
+		static double xs2[20], ys2[20];
+		for (int i = 0; i < 20; ++i)
+		{
+			xs2[i] = i * 1 / 19.0f;
+			ys2[i] = xs2[i] * xs2[i];
+		}
+		static ImU32 colorDataRGB[3] = {0xFFFF0000, 0xFF00FF00, 0xFF0000FF};
+		static int customRGBMap;
+		static int i = 0;
+		if (i == 0)
+		{
+			customRGBMap = ImPlot::AddColormap("RGBColors", colorDataRGB, 3);
+			i++;
+		}
+		/*
+				int customRGBMap2 = ImPlot::GetColormapIndex("RGBColors");
+				if (customRGBMap2 >= ImPlot::GetColormapCount())
+		*/
+		ImPlot::PushColormap(customRGBMap);
+
+		if (ImPlot::BeginPlot("Line Plots"))
+		{
+			ImPlot::SetupAxes("x", "y");
+			ImPlot::PlotLine("f(x)", xs1, ys1, 1001);
+			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
+			ImPlot::PlotLine("g(x)", xs2, ys2, 20, ImPlotLineFlags_Segments);
+			ImPlot::PlotLine("h(x)", xs3, ys3, 20, ImPlotLineFlags_Segments);
+			ImPlot::EndPlot();
+			/*
+			int customRGBMap1 = ImPlot::GetColormapIndex("RGBColors");
+			if (customRGBMap1 > ImPlot::GetColormapCount())
+			{
+			*/
+			ImPlot::PopColormap();
+			//}
+		}
+	}
 };
