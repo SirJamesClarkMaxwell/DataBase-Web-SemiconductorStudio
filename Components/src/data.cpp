@@ -131,9 +131,20 @@ Characteristic &UI::Data::PlotData::operator[](const std::string &name)
 
 void UI::Data::PlotData::setColorsOfCharacteristics()
 {
-    ImColor colorStep = (endColor - startColor) / (characteristics.size() - 1);
-    for (const auto &[index, item] : std::views::enumerate(characteristics))
-        item.m_color = startColor + index * colorStep;
+    // ImColor colorStep = (endColor - startColor) / (characteristics.size() - 1);
+    // for (const auto &[index, item] : std::views::enumerate(characteristics))
+    //     item.m_color = startColor + index * colorStep;
+    // todo extract this code to concrete functions
+    size_t numChars = characteristics.size();
+    for (size_t i = 0; i < numChars; ++i)
+    {
+        float t = static_cast<float>(i) / (numChars - 1); // Calculate the interpolation factor (0 to 1)
+        characteristics[i].m_color = ImColor(
+            startColor.Value.x * (1.0f - t) + endColor.Value.x * t,
+            startColor.Value.y * (1.0f - t) + endColor.Value.y * t,
+            startColor.Value.z * (1.0f - t) + endColor.Value.z * t,
+            startColor.Value.w * (1.0f - t) + endColor.Value.w * t);
+    }
 }
 
 void UI::Data::PlotData::setColorsOfGraph()
