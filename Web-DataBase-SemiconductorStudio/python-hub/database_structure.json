@@ -3,41 +3,35 @@
         "columns": [
             "user_name", 
             "user_password", 
-            "storage_extension_id"],
-        "foreign_keys": [
-            "storage_extension_id"]
+            "mail"
+       ]
     },
-    "storage_extension": {
+    "main_table": {
         "columns": [
-            "user_id", 
-            "storage_extension_id", 
-            "storage_id"],
-        "foreign_keys": [
-            "user_id",  
-            "storage_id"]
+            //UUID ma być ukryte i jest to tylko dla wewnętrzych potrzeb bazy danych
+            "UUID",
+            "record_name", 
+            "storages", //linki do konkretnych tabelk storage ["storage1", "storage2", ...]
+            ["mesurement_name_id"] // więcej kolumn, każda z nich będzie miała osobną relację  
+            ],
+   
+        "primary_keys": ["UUID"],
+        "foreign_keys": ["-UUID"],
     },
-    "storage_": {
-        "columns": [
-            "storage_id", 
-            "storage_name"
-]
+
+    "storage_name":{
+        "columns": ["-UUID","record_name","storage_name"],
+        "foreign_keys":"-UUID", //tworzy relacje z główna tabelka
     },
-    "mesurement": {
+    
+    "mesurement_name_id": {
         "columns": [
-            "mesurement_id", 
-            "mesurement", 
+            "-UUID"
+            "record_name",
+            "data", // wiele kolumn per tabelka 
             "next_mesurement"],
-        "foreign_keys": [
-            "next_mesurement"]
+        "primary_keys":"-UUID", // to tabelki głównej/poprzedniej
+        "foreign_keys": "-UUID" // link do następnej tabelki
     },
-    "mesurement_attribute": {
-        "columns": [
-            "mesurement_attribute_id", 
-            "value", 
-            "temperature",
-            "mesurement_extension_id"],
-        "foreign_keys": [
-            "mesurement_extension_id"]
-    }
 }
 

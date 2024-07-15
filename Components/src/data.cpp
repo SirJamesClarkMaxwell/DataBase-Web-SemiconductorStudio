@@ -134,7 +134,7 @@ void UI::Data::PlotData::setColorsOfCharacteristics()
     // ImColor colorStep = (endColor - startColor) / (characteristics.size() - 1);
     // for (const auto &[index, item] : std::views::enumerate(characteristics))
     //     item.m_color = startColor + index * colorStep;
-    // todo extract this code to concrete functions
+    // todo extract this code to gconcrete functions
     size_t numChars = characteristics.size();
     for (size_t i = 0; i < numChars; ++i)
     {

@@ -9,4 +9,5 @@
 
 --- przyszłościowo
 
--poziomy ufności dla każdej charakterystyki
+- poziomy ufności dla każdej charakterystyki
+- możliwość dowolnego usuwania rekordów, natomiast możemy to pominąć w pierwszej/drugiej/trzeciej implementacji
