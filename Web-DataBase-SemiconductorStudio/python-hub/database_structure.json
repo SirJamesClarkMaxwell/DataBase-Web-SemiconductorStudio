@@ -1,5 +1,3 @@
-
-
 {
     "users": {
         "columns": [
@@ -23,7 +21,6 @@
             "storage_id", 
             "storage_name"
 ]
-
     },
     "mesurement": {
         "columns": [

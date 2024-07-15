@@ -1,0 +1,12 @@
+
+- struktura recordów(json) z pliku ściąganego z DB (z tabelką i kolumną)
+- kreator tabelki (ideowo)
+- update recordu
+
+
+
+
+
+--- przyszłościowo
+
+-poziomy ufności dla każdej charakterystyki
