@@ -11,6 +11,7 @@
             //UUID ma być ukryte i jest to tylko dla wewnętrzych potrzeb bazy danych
             "UUID",
             "record_name", 
+            "short description"
             "storages", //linki do konkretnych tabelk storage ["storage1", "storage2", ...]
             ["mesurement_name_id"] // więcej kolumn, każda z nich będzie miała osobną relację  
             ],
@@ -26,7 +27,7 @@
     
     "mesurement_name_id": {
         "columns": [
-            "-UUID"
+            "-UUID" // link do głównej tabelki
             "record_name",
             "data", // wiele kolumn per tabelka 
             "next_mesurement"],
