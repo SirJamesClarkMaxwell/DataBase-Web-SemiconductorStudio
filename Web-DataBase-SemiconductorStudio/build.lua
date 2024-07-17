@@ -25,7 +25,13 @@ project "Web-DataBase-SemiconductorStudio"
                   "%{wks.location}/Vendor/nlohmann",
                   "%{wks.location}/Components/include",
                   "%{wks.location}/Vendor/yaml-cpp/include",
-                  "%{wks.location}/Vendor/yaml-cpp/include/yaml-cpp"
+                  "%{wks.location}/Vendor/yaml-cpp/include/yaml-cpp",
+
+                  "%{wks.location}/Vendor/cpr/curl",
+                  "%{wks.location}/Vendor/cpr/curl/curl",
+                  "%{wks.location}/Vendor/cpr",
+                  "%{wks.location}/Vendor/cpr/cpr",
+                  "%{wks.location}/Vendor/cpr/includes/cpr",
 
 
     }
@@ -51,6 +57,6 @@ project "Web-DataBase-SemiconductorStudio"
 
     filter { "system:windows" }
 		ignoredefaultlibraries { "msvcrt" }
-        links {  "legacy_stdio_definitions", "opengl32", "glfw3", "imgui", "implot", "Components", "yaml-cpp" }
+        links {  "legacy_stdio_definitions", "opengl32", "glfw3", "imgui", "implot", "Components", "yaml-cpp","cpr" }
 
 
