@@ -98,17 +98,6 @@ def insertMesurement():
         return jsonify({"error": "Failed to get data"}), 500
     
 
-@app.route('/API/save', methods=['POST'])
-def saveCred():
-    data = request.json
-
-    username = data.get('username')
-    password = data.get('password')
-
-    mng.get_conn()
-    pass
-
-
 @app.route('/API/createMesurement', methods=['POST'])
 def insertMes():
     data = request.json
@@ -118,7 +107,6 @@ def insertMes():
     short_desc = data.get("short_desc")
     try:
         mng.get_conn()
-
         mng.crate_storage(storage_name, record_name, short_desc)
 
 
@@ -149,14 +137,18 @@ def insertData():
         return jsonify({"error": "Failed to get data"}), 500
 
 
+@app.route('/API/getConns', methods = ['GET'])
+def getConns():
+    try:
+        mng.get_conn()
+        networking = mng.get_network()
 
+        mng.close_conn()
 
-
-
-@app.route('/API/updateRec', methods = ['POST'])
-def updRec():
-    pass
-
+        return jsonify({"message": "Connections received properly", "data": networking}), 201
+    
+    except Exception as e:
+        return jsonify({"error": "Failed to get data"}), 500
 
 
 

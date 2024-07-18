@@ -7,7 +7,7 @@ import base64
 import uuid
 import bcrypt
 import uuid
-
+from parser import Parser
 load_dotenv()
 
 
@@ -256,6 +256,7 @@ class Manager:
         c = self.get_from_db("cv", "", "", True, "name", "mes_num")
         storages_data = []
         mes_data = []
+        result = []
         try:
             for i in range(len(main_table)):
                 storage = main_table[i][0]
@@ -273,9 +274,13 @@ class Manager:
                 rec_name_c =  c[i][0]
                 mes_data.append({"number of I(V) chars for given record" : amount_i, "I(V) record": rec_name_i, "number of C(V) chars for given record": amount_c, "C(V) record": rec_name_c})
                 
+            result.append(mes_data)
+            result.append(storages_data)
+            #print(mes_data)
+            #print(storages_data)
 
-            print(mes_data)
-            print(storages_data)
+            print(result)
+            return result
         except Exception as error:
             print(f"Error: {error}")
             return None
