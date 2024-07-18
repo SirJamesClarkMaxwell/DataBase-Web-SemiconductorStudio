@@ -114,18 +114,43 @@ def insertMes():
     data = request.json
 
     storage_name = data.get('storage_name')
-    temperature = data.get("temperature")
-    characteristic = data.get("characteristic")
+    record_name = data.get("record_name")
+    short_desc = data.get("short_desc")
     try:
         mng.get_conn()
 
-        mng.initialize_mesurement(storage_name, temperature, characteristic)
+        mng.crate_storage(storage_name, record_name, short_desc)
 
-        return jsonify({"message": "Properly created mesurement table"}), 201
+
+        mng.close_conn()
+        return jsonify({"message": "Properly create storage space in main table"}), 201
 
     except Exception as e:
         return jsonify({"error": "Failed to get data"}), 500
     
+@app.route('/API/isnertData', methods = ['POST'])
+def insertData():
+    data = request.json
+
+    record_name = data.get('record_name')
+    data_ = data.get('data')
+    measurement = data.get('mes') # IV or CV 
+
+    try:
+        mng.get_conn()
+
+        mng.insert_mesurements(record_name, measurement, data_)
+
+        mng.close_conn()
+
+        return jsonify({"message": "Properly inserted data"}), 201
+
+    except Exception as e:
+        return jsonify({"error": "Failed to get data"}), 500
+
+
+
+
 
 
 @app.route('/API/updateRec', methods = ['POST'])

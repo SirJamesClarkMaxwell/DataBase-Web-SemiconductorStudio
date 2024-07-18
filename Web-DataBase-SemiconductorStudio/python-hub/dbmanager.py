@@ -158,7 +158,7 @@ class Manager:
 
 
 
-    def get_from_db(self, tablename, column_name, identifier, *args) -> str:
+    def get_from_db(self, tablename, column_name, identifier, all_, *args) -> str:
         '''
         Returns data from columns passed in "*args"
         while condition "WHERE column_name=identifier"
@@ -172,66 +172,113 @@ class Manager:
     
         if not isinstance(tablename, str) or not tablename.isidentifier():
             raise ValueError("Invalid table name.")
-
-        query = f"SELECT {columns} FROM {tablename} WHERE {column_name} ='{identifier}';"
+        if all_ == True:
+            query = f"SELECT {columns} FROM {tablename};"
+        else:
+            query = f"SELECT {columns} FROM {tablename} WHERE {column_name} ='{identifier}';"
         
         try:
 
             self.cursor.execute(query)
             results = self.cursor.fetchall()
-            
+            self.conn.commit()
             return results
         
         except Exception as error:
             print(f"Error: {error}")
             return None
 
-    def initialize_mesurement(self,  storage_name, temperature, characteristic)->None:
-        '''
-        z  tablicy storage_ dodajemy id do mesurement oraz mesurement_attribute i extension
-        rozróżnienie trybu view i ten drugi
-        '''
+    def crate_storage(self, storage_name, record_name, short_desc):
+        uuid = self.generate_uuid()
 
-        attribute1 = self.generate_uuid()
-
-        mes_tablename = self.generate_uuid()
-        
-
-        storage_id = self.get_from_db("storage_", "storage_name", storage_name, "storage_id")
-        query_attribute1 = f"INSERT INTO  measurement_attribute (value, measurement_attribute_id, temperature, measurement_table_name, stoarge_id) VALUES ('{characteristic}', '{attribute1}', {temperature}, '{mes_tablename}', '{storage_id}');"
-        mes_query = f"""
-            CREATE TABLE {mes_tablename} (
-                measurement_id SERIAL PRIMARY KEY, 
-                measurement FLOAT, 
-                next_measurement_id uuid 
-            );
-            """
+        query = f"INSERT INTO test.main_table (id_, record_name, storages, short_description) VALUES ('{uuid}', '{record_name}', '{storage_name}', '{short_desc}');"
+        query2 = f"CREATE TABLE test.{storage_name} (id uuid PRIMARY KEY, name varchar(30));"
+        query3 = f"INSERT INTO test.{storage_name} (id, name) VALUES ('{uuid}', '{record_name}');"
         
         try:
-            self.cursor.execute(query_attribute1)
-            self.cursor.execute(mes_query)
+
+            self.cursor.execute(query)
+            self.cursor.execute(query2)
+            self.cursor.execute(query3)
             self.conn.commit()
             
-
-        except Exception as e:
-            print(f"Error: {e}")
-            return None
-    def change_storage_name(self, storage_name, previous_storage_name)->str:
-        change_name_query = f"UPDATE test.storage_ SET storage_name = '{storage_name}' WHERE storage_name = '{previous_storage_name}';"
-        try:
-            self.cursor.execute(change_name_query)
-            self.conn.commit()
-
-            return "succesfulyl changed storage name"
-            
-
-        except Exception as e:
-            print(f"Error: {e}")
+        
+        except Exception as error:
+            print(f"Error: {error}")
             return None
         
-    def insert_mesurements(self)->None:
-        pass
-    
+    def insert_mesurement(self, recordname, mes, data)->None:
+        query1 = f"SELECT id_ FROM test.main_table WHERE record_name = '{recordname}'"
+        try:
+
+            self.cursor.execute(query1)
+            result1 = self.cursor.fetchall()
+            id_ = str(result1[0][0])
+
+            query2 = f"INSERT INTO test.{mes} (id, name, data, mes_num) VALUES ('{id_}', '{recordname}', '{data}', 1)"
+            query3 = f"UPDATE test.main_table SET {mes} = '{id_}' WHERE id_ = '{id_}';"
+            self.cursor.execute(query2)
+            self.cursor.execute(query3)
+            self.conn.commit()
+            return None
+        
+        except Exception as error:
+            print(f"Error: {error}")
+            return None
+        
+    def insert_another_mes(self, mes, data, uuid):
+
+        amount = self.get_from_db(f"{mes}", "id", f"{uuid}", False, "mes_num")
+        nex = amount + 1
+        try:
+
+            query1 = f"CREATE TABLE test.{nex} (id uuid PRIMARY KEY, data text, next_mes uuid, mes_num int);"
+            self.cursor.execute(query1)
+
+            query2 = f"ALTER TABLE text.{amount} ADD CONSTRAINT FOREIGN KEY fk_ivn FOREIGN KEY (next_mesurement) REFERENCES test.{nex}(id);"
+            self.cursor.execute(query2)
+            query3 = f"INSERT INTO TABLE test.{nex} (data) VALUES ('{data}');"
+            query4 = f"UPDATE test.iv SET mes_num = '{nex}' WHERE id_ = '{uuid}';"
+            self.cursor.execute(query3)
+            self.cursor.execute(query4)
+
+            results = self.cursor.fetchall()
+            self.conn.commit()
+            return results
+        
+        except Exception as error:
+            print(f"Error: {error}")
+            return None
+    def get_network(self):
+        main_table = self.get_from_db("main_table", "a", "a", True, "storages", "record_name", "iv", "cv")
+        #print(main_table)
+        curr = self.get_from_db("iv", "", "", True, "name", "mes_num")
+        c = self.get_from_db("cv", "", "", True, "name", "mes_num")
+        storages_data = []
+        mes_data = []
+        try:
+            for i in range(len(main_table)):
+                storage = main_table[i][0]
+                record = main_table[i][1]
+                query = f"SELECT * FROM test.{storage}"
+                self.cursor.execute(query)
+                storages = self.cursor.fetchall()
+                storages_data.append({"storage name": storage, "record name": storages[0][1]})
+                #print(storages_data)
+                
+                amount_i = curr[i][1]
+                rec_name_i = curr[i][0]
+
+                amount_c = c[i][1]
+                rec_name_c =  c[i][0]
+                mes_data.append({"number of I(V) chars for given record" : amount_i, "I(V) record": rec_name_i, "number of C(V) chars for given record": amount_c, "C(V) record": rec_name_c})
+                
+
+            print(mes_data)
+            print(storages_data)
+        except Exception as error:
+            print(f"Error: {error}")
+            return None
     def close_conn(self)->None:
         '''
         closing connection to database
@@ -243,6 +290,12 @@ class Manager:
             self.conn.close()
 
 
-#mng = Manager()
+mng = Manager()
 
-#mng.get_conn()
+mng.get_conn()
+
+#mng.crate_storage("test_storage", "record1", "Jest to testowy opis pierwszego storage z testowym recordem")
+
+#mng.insert_mesurement("record1", "cv", "[1,2,3,4,5,6,7,8,9,10]")
+
+mng.get_network()
