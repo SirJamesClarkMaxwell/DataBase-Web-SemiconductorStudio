@@ -1,5 +1,5 @@
-#include "cpr/callback.h"
-#include "cpr/cprtypes.h"
+#include "../include/cpr/callback.h"
+#include "../include/cpr/cprtypes.h"
 #include <functional>
 
 namespace cpr {

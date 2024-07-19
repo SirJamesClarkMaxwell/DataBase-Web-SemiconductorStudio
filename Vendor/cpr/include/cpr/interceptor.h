@@ -1,9 +1,9 @@
 #ifndef CPR_INTERCEPTOR_H
 #define CPR_INTERCEPTOR_H
 
-#include "cpr/multiperform.h"
-#include "cpr/response.h"
-#include "cpr/session.h"
+#include "multiperform.h"
+#include "response.h"
+#include "session.h"
 #include <vector>
 
 namespace cpr {

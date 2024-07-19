@@ -1,5 +1,5 @@
-#include "cpr/bearer.h"
-#include "cpr/util.h"
+#include "../include/cpr/bearer.h"
+#include "../include/cpr/util.h"
 #include "../../curl/curl/curlver.h"
 
 namespace cpr {

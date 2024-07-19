@@ -1,7 +1,7 @@
 #ifndef CPR_CONNECT_TIMEOUT_H
 #define CPR_CONNECT_TIMEOUT_H
 
-#include "cpr/timeout.h"
+#include "timeout.h"
 
 namespace cpr {
 

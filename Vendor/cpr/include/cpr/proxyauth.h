@@ -5,8 +5,8 @@
 #include <map>
 #include <string>
 
-#include "cpr/auth.h"
-#include "cpr/util.h"
+#include "auth.h"
+#include "util.h"
 
 namespace cpr {
 class ProxyAuthentication;

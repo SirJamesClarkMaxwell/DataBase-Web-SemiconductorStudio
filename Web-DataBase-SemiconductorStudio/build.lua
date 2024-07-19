@@ -27,8 +27,8 @@ project "Web-DataBase-SemiconductorStudio"
                   "%{wks.location}/Vendor/yaml-cpp/include",
                   "%{wks.location}/Vendor/yaml-cpp/include/yaml-cpp",
 
-                  "%{wks.location}/Vendor/cpr/curl",
-                  "%{wks.location}/Vendor/cpr/curl/curl",
+                  "%{wks.location}/Vendor/curl",
+                  "%{wks.location}/Vendor/curl/curl",
                   "%{wks.location}/Vendor/cpr",
                   "%{wks.location}/Vendor/cpr/cpr",
                   "%{wks.location}/Vendor/cpr/includes/cpr",

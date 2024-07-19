@@ -5,7 +5,7 @@
 #include <future>
 #include <memory>
 
-#include "cpr/response.h"
+#include "response.h"
 
 namespace cpr {
 enum class [[nodiscard]] CancellationResult { failure, success, invalid_operation };

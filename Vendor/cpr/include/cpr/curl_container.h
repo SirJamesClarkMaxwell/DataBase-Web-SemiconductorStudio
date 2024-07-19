@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "cpr/curlholder.h"
+#include "curlholder.h"
 
 
 namespace cpr {

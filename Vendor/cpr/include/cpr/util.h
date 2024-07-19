@@ -5,10 +5,10 @@
 #include <string>
 #include <vector>
 
-#include "cpr/callback.h"
-#include "cpr/cookies.h"
-#include "cpr/cprtypes.h"
-#include "cpr/curlholder.h"
+#include "callback.h"
+#include "cookies.h"
+#include "cprtypes.h"
+#include "curlholder.h"
 
 namespace cpr::util {
 

@@ -1,8 +1,8 @@
-#include "cpr/interceptor.h"
-#include "cpr/callback.h"
-#include "cpr/multiperform.h"
-#include "cpr/response.h"
-#include "cpr/session.h"
+#include "../include/cpr/interceptor.h"
+#include "../include/cpr/callback.h"
+#include "../include/cpr/multiperform.h"
+#include "../include/cpr/response.h"
+#include "../include/cpr/session.h"
 #include <cstddef>
 #include <iosfwd>
 #include <stdexcept>

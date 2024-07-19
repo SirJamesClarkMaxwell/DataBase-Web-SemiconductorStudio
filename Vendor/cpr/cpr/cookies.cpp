@@ -1,5 +1,5 @@
-#include "cpr/cookies.h"
-#include "cpr/curlholder.h"
+#include "../include/cpr/cookies.h"
+#include "../include/cpr/curlholder.h"
 #include <chrono>
 #include <ctime>
 #include <iomanip>

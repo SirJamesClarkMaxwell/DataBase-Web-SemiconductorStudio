@@ -1,9 +1,9 @@
 #ifndef CPR_MULTIPERFORM_H
 #define CPR_MULTIPERFORM_H
 
-#include "cpr/curlmultiholder.h"
-#include "cpr/response.h"
-#include "cpr/session.h"
+#include "curlmultiholder.h"
+#include "response.h"
+#include "session.h"
 #include <functional>
 #include <memory>
 #include <queue>

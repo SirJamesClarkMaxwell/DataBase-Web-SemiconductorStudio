@@ -7,17 +7,17 @@
 #include <string>
 #include <utility>
 
-#include "cpr/async.h"
-#include "cpr/async_wrapper.h"
-#include "cpr/auth.h"
-#include "cpr/bearer.h"
-#include "cpr/cprtypes.h"
-#include "cpr/filesystem.h"
-#include "cpr/multipart.h"
-#include "cpr/multiperform.h"
-#include "cpr/payload.h"
-#include "cpr/response.h"
-#include "cpr/session.h"
+#include "async.h"
+#include "async_wrapper.h"
+#include "auth.h"
+#include "bearer.h"
+#include "cprtypes.h"
+#include "filesystem.h"
+#include "multipart.h"
+#include "multiperform.h"
+#include "payload.h"
+#include "response.h"
+#include "session.h"
 
 namespace cpr {
 

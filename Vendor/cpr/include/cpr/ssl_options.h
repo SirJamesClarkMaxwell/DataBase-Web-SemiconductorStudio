@@ -5,10 +5,10 @@
 #include <string>
 #include <vector>
 
-#include "cpr/filesystem.h"
+#include "filesystem.h"
 #include  "../../curl/curl/curl.h"
 
-#include "cpr/util.h"
+#include "util.h"
 #include <utility>
 
 #ifndef SUPPORT_ALPN

@@ -8,12 +8,12 @@
 #include <utility>
 #include <vector>
 
-#include "cpr/cert_info.h"
-#include "cpr/cookies.h"
-#include "cpr/cprtypes.h"
-#include "cpr/error.h"
-#include "cpr/ssl_options.h"
-#include "cpr/util.h"
+#include "cert_info.h"
+#include "cookies.h"
+#include "cprtypes.h"
+#include "error.h"
+#include "ssl_options.h"
+#include "util.h"
 
 namespace cpr {
 

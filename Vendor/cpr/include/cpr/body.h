@@ -7,9 +7,9 @@
 #include <string>
 #include <vector>
 
-#include "cpr/buffer.h"
-#include "cpr/cprtypes.h"
-#include "cpr/file.h"
+#include "buffer.h"
+#include "cprtypes.h"
+#include "file.h"
 
 namespace cpr {
 

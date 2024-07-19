@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <string>
 
-#include "cpr/cprtypes.h"
+#include "cprtypes.h"
 #include <utility>
 
 namespace cpr {

@@ -1,7 +1,7 @@
 #ifndef CPR_SSL_CTX_H
 #define CPR_SSL_CTX_H
 
-#include "cpr/ssl_options.h"
+#include "ssl_options.h"
 #include  "../../curl/curl/curl.h"
 
 #if SUPPORT_CURLOPT_SSL_CTX_FUNCTION

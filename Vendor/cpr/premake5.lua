@@ -3,46 +3,51 @@ project "cpr"
 	language "C++"
 	location "%{wks.location}/Vendor/cpr"
 
-	targetdir ("%{wks.location}/lib/%{cfg.buildcfg}")
-	objdir ("%{wks.location}/obj/%{cfg.buildcfg}")
-
+	include "%{prj.location}/../Vendor/curl/premake5.lua"
 	files
 	{
-		"%{prj.location}/curl/**.h",
-		"%{prj.location}/curl/curl**.h",
-
+		-- "../%{prj.location}/curl/**.h",
+		-- "../%{prj.location}/curl/curl**.h",
+		
 		"%{prj.location}/cpr/**.h",
 		"%{prj.location}/cpr/**.cpp",
 		"%{prj.location}/include/cpr/**.h"
 	}
-
+	
 	includedirs
 	{
+		-- "../%{prj.location}/curl/**.h",
+		-- "../%{prj.location}/curl/curl**.h",
+		
 		"%{prj.location}/include",
 		"%{prj.location}/curl",
 		"%{prj.location}/curl/curl"
 	}
-
-	-- defines
-	-- {
-	-- 	"YAML_CPP_STATIC_DEFINE"
-	-- }
+	
+	targetdir ("%{wks.location}/lib/%{cfg.buildcfg}")
+	objdir ("%{wks.location}/obj/%{cfg.buildcfg}")
+	
+	libdirs ( "%{wks.location}/lib" )
 
 	filter "system:windows"
 		systemversion "latest"
 		cppdialect "C++17"
 		staticruntime "off"
-
-	filter "system:linux"
+		links{"curl"}
+		
+		filter "system:linux"
 		pic "On"
 		systemversion "latest"
 		cppdialect "C++17"
 		staticruntime "off"
-
-	filter "configurations:Debug"
+		links{"curl"}
+		
+		filter "configurations:Debug"
 		runtime "Debug"
 		symbols "on"
-
-	filter "configurations:Release"
+		links{"curl"}
+		
+		filter "configurations:Release"
 		runtime "Release"
 		optimize "on"
+		links{"curl"}

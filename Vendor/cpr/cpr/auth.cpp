@@ -1,5 +1,5 @@
-#include "cpr/auth.h"
-#include "cpr/util.h"
+#include "../include/cpr/auth.h"
+#include "../include/cpr/util.h"
 
 namespace cpr {
 Authentication::~Authentication() noexcept {
