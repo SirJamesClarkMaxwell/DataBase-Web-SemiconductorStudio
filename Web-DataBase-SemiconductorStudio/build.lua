@@ -39,7 +39,9 @@ project "Web-DataBase-SemiconductorStudio"
     objdir ( "%{wks.location}/obj/%{cfg.buildcfg}" )
 
 
-
+    defines {
+		"YAML_CPP_STATIC_DEFINE"
+	}
     
     libdirs ( "%{wks.location}/lib" )
 

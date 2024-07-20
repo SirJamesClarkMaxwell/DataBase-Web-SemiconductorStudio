@@ -1,7 +1,9 @@
 #include "pch.hpp"
 #include "tester.hpp"
 #include "main_json.hpp"
-#include "../cpr/include/cpr/cpr.h"
+//#include "../cpr/include/cpr/cpr.h"
+
+
 
 int main()
 {
@@ -15,7 +17,7 @@ int main()
 	// TestedFitting to be initialized in the constructor of Tester
 	Tester t1{};
 	t1.run(UI::Components::draw_tester);
-	 #endif
+	 
 
 
 	cpr::Response r = cpr::Get(cpr::Url{ "https://api.github.com/repos/whoshuu/cpr/contributors" },
@@ -26,5 +28,19 @@ int main()
 	r.text;                         // JSON text string
 
 	std::cout << r.text << std::endl;
+#endif
+	YAML::Node config = YAML::LoadFile("D:\\programming\\numerical\\SSweb\\bin\\Web-DataBase-SemiconductorStudio-Debug\\config.yaml");
+
+	/*if (config["lastLogin"]) {
+		std::cout << "Last logged in: " << config["lastLogin"].as<DateTime>() << "\n";
+	}*/
+
+	const std::string username = config["username"].as<std::string>();
+	const std::string password = config["password"].as<std::string>();
+	std::cout << "Username: " << username << "\n";
+		std::cout << "Password: " << password << "\n";
+
+	std::ofstream fout("config.yaml");
+	fout << config;
 	return 0;
 };
