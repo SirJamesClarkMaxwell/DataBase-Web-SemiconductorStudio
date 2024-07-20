@@ -24,5 +24,7 @@ int main()
 	r.status_code;                  // 200
 	r.header["content-type"];       // application/json; charset=utf-8
 	r.text;                         // JSON text string
+
+	std::cout << r.text << std::endl;
 	return 0;
 };
