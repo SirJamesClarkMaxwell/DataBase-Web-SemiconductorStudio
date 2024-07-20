@@ -10,7 +10,7 @@ workspace "Web-DataBase-SemiconductorStudio"
 
 	location "./"
 
-	srunt = "off"
+	srunt = "on"
 
 
 	include "./Components/build.lua"
