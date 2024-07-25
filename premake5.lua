@@ -12,12 +12,15 @@ workspace "Web-DataBase-SemiconductorStudio"
 
 	srunt = "on"
 
+    defines {
+		"YAML_CPP_STATIC_DEFINE"
+	}
 
 	include "./Components/build.lua"
 	include "./Vendor/build.lua"
 	include "./Vendor/yaml-cpp"
 	-- include "./Vendor/curl/premake5.lua"
-	-- include "./Vendor/cpr"
+	include "./Vendor/cpr"
 	include "./Web-DataBase-SemiconductorStudio/build.lua"
 
 
