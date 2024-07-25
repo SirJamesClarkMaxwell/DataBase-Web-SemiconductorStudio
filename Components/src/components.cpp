@@ -72,33 +72,22 @@ namespace UI::Components
 		std::tuple<std::string, std::string> axisProperties = plotData.plotProperties.axis;
 
 		PlotProperties &plotProperties = plotData.plotProperties;
-		/*
-				ImU32 &name = plotProperties.name;
-				if (plotProperties.addedColorMap == -1 && plotProperties.colors.size() > 0)
-				{
-					plotProperties.customRGMMap = ImPlot::AddColormap(std::to_string(name).c_str(), plotProperties.colorMapPointer, plotProperties.colorMap.size());
-					plotProperties.addedColorMap = 1;
-				}
 
-				if (plotProperties.colors.size() > 0)
-					ImPlot::PushColormap(plotProperties.customRGMMap);
-		*/
-		ImPlot::BeginPlot("testing Plot", plot_size, plot_flags);
-		// setupPlot(plot_flags, plotData);
-		ImPlot::SetupAxes("V", "I", plot_flags, plot_flags);
-		if (!plotData.plotProperties.lin_x_scale)
-			ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Linear);
-		if (!plotData.plotProperties.lin_y_scale)
-			ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Linear);
-		for (auto &item : plotData.characteristics)
-			if (item)
-				plotOneCharacteristic(item);
+		if (ImPlot::BeginPlot("testing Plot", plot_size, plot_flags))
+		{
+				// setupPlot(plot_flags, plotData);
+				ImPlot::SetupAxes("V", "I", plot_flags, plot_flags);
+			if (!plotData.plotProperties.lin_x_scale)
+				ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Linear);
+			if (!plotData.plotProperties.lin_y_scale)
+				ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Linear);
+			for (auto& item : plotData.characteristics)
+				if (item)
+					plotOneCharacteristic(item);
 
-		ImPlot::EndPlot();
-		/*
-		if (plotData.plotProperties.colors.size() > 1)
-			ImPlot::PopColormap();
-		*/
+			ImPlot::EndPlot();
+		}
+
 	}
 	void plotOneCharacteristic(UI::Data::Characteristic &characteristic)
 	{
