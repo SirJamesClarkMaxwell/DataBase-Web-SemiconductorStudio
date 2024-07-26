@@ -6,8 +6,13 @@ project "Components"
     staticruntime(srunt)
     files {
         "%{prj.location}/**.cpp",
-        "%{prj.location}/src/**.cpp",
         "%{prj.location}/**.hpp",
+        "%{prj.location}/**.h",
+        
+        "%{prj.location}/src/**.cpp",
+        -- "%{wks.location}/Vendor/LambertW/**.cpp",
+        -- "%{wks.location}/Vendor/LambertW/**.h"
+        
     }
 
     pchheader "pch.hpp"
@@ -25,8 +30,10 @@ project "Components"
                   "%{wks.location}/Vendor/libs/glfw/include",
                   "%{wks.location}/Vendor/nlohmann",
                   "%{wks.location}/Vendor/yaml-cpp/include",
-                  "%{wks.location}/Vendor/yaml-cpp/include/yaml-cpp"
-
+                  "%{wks.location}/Vendor/yaml-cpp/include/yaml-cpp",
+                --   "%{wks.location}/Vendor/LambertW/",
+                --   "%{wks.location}/Vendor/LambertW/"
+-- 
     }
     targetdir ( "%{wks.location}/lib/" )
     objdir ( "%{wks.location}/obj/%{cfg.buildcfg}" )
@@ -47,6 +54,6 @@ project "Components"
 
     filter { "system:windows" }
 		ignoredefaultlibraries { "msvcrt" }
-        links {  "legacy_stdio_definitions", "opengl32", "glfw3", "imgui", "implot",
+        links {  "legacy_stdio_definitions", "opengl32", "glfw3", "imgui", "implot"
         -- "yaml-cpp"
     }

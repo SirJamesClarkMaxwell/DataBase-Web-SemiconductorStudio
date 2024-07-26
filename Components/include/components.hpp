@@ -3,6 +3,7 @@
 #include "data.hpp"
 #include "imgui.h"
 #include "implot.h"
+#include "./LambertW.h"
 
 namespace UI::Components
 {
@@ -11,7 +12,7 @@ namespace UI::Components
 	void draw_tester(std::shared_ptr<MyData> state);
 
 	void drawPlots(DataPreview &plotData);
-	void plotOneCharacteristic(UI::Data::Characteristic &characteristic);
+	void plotOneCharacteristic(UI::Data::Characteristic &characteristic, bool log = false);
 	void setupPlot(ImPlotFlags plot_flags, UI::Data::PlotData &plotData);
 	void drawContentBrowserData(DataPreview &ContentBrowserDataData);
 	void readAllDataFromDirectory(const std::filesystem::path &rootPath, const std::filesystem::path &currentPath, ContentBrowserData &contentBrowserData);
@@ -19,4 +20,5 @@ namespace UI::Components
 	void ShowMultiSelectableTable();
 	void drawAdvancedTable();
 	void Demo_LinePlots();
+	void drawGeneratingCurvesPanel(GeneratingCharacteristicsPanelData &data);
 }
