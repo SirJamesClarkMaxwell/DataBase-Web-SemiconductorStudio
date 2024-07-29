@@ -21,5 +21,6 @@ workspace "Web-DataBase-SemiconductorStudio"
 	-- include "./Vendor/curl/premake5.lua"
 	-- include "./Vendor/cpr"
 	include "./Web-DataBase-SemiconductorStudio/build.lua"
+	include "./Vendor/NumericStorm/NumericStorm"
 
 
