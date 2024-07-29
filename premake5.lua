@@ -7,7 +7,8 @@ workspace "Web-DataBase-SemiconductorStudio"
 	platforms { "x86", "x86_64" }
 	language "C++"
 	cppdialect "C++latest"
-
+	staticruntime "off"
+	runtime "Debug"
 	location "./"
 
 	srunt = "on"

@@ -5,7 +5,9 @@
 #include "implot.h"
 #include <iostream>
 #include <complex>
+#include "TestingFittingAndMC.hpp"
 // #include "LambertW.h"
+
 namespace UI::Data
 {
 	using json = nlohmann::json;
@@ -61,7 +63,7 @@ namespace UI::Data
 		Characteristic &operator=(Characteristic &&) = default;
 		std::string name{"characteristic "};
 		// ImVec4 m_color;
-		ImColor m_color{1, 0, 0, 1};
+		ImVec4 m_color{1, 0, 0, 1};
 
 		// void setColor(const ImVec4 &color) { m_color = color; };
 		double m_temperature{};
@@ -149,6 +151,7 @@ namespace UI::Data
 		MyData() = default;
 		DataPreview dataPreview{};
 		GeneratingCharacteristicsPanelData generatingCharacteristicsData;
+		JunctionFitMaster::FittingTesting fittingTestingData;
 	};
 
 	std::vector<double> generate_range(double start, double end, double step);

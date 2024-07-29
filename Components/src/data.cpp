@@ -1,6 +1,6 @@
 #include "pch.hpp"
-#include "data.hpp"
- #include "LambertW.h"
+#include "../include/data.hpp"
+#include "LambertW.h"
 // #include "stdafx.h"
 using namespace UI::Data;
 
@@ -221,15 +221,16 @@ double UI::Data::diode_equation(double I, double V, double I_L, double I_0, doub
 void UI::Data::current(double &V, double &I, double &I0, double &A, double &Rsch, double &Rs, double T)
 {
     // Constants
-    const double k = 8.6e5;          // Boltzmann constant in J/K
+    const double k = 8.6e-5;         // Boltzmann constant in J/K
     const double q = 1.60217662e-19; // Charge of an electron in C
     const double V_t = k * T / q;
     double x = ((q * I0 * Rs) / (A * k * T)) * std::exp(V / (A * k * T));
-    //std::complex<double> c = {x, 0};
-    //std::complex<double> c1 = LamberWN::LambertW(c, 0);
-     double I_lw = utl::LambertW<0>(x);
+    // std::complex<double> c = {x, 0};
+    // std::complex<double> c1 = LamberWN::LambertW(c, 0);
+
+    double I_lw = x > -std::exp(-1) ? utl::LambertW<0>(x) : utl::LambertW<-1>(x);
     //  long double c1 = std::log(x);
-    //double I_lw = ((A * k * T) / (Rs)) * c.real();
+    // double I_lw = ((A * k * T) / (Rs)) * c.real();
     // std::cout << "(q * I0 * Rs): " << (q * I0 * Rs) << std::endl;
     // std::cout << " (A * k * T):" << (A * k * T) << std::endl;
     // std::cout << "(q * I0 * Rs) / (A * k * T): " << ((q * I0 * Rs) / (A * k * T)) << std::endl;
@@ -238,7 +239,7 @@ void UI::Data::current(double &V, double &I, double &I0, double &A, double &Rsch
     // std::cout << "std::exp(V / (A * k * T)) " << std::exp(V / (A * k * T)) << std::endl;
     // std::cout << "x " << x << std::endl;
     I = I_lw + (V - I_lw * Rs) / Rsch + std::pow((V - I_lw * Rs), 1) / std::pow(10, 9);
-    //I = c1.real();
+    // I = c1.real();
 }
 
 namespace LamberWN

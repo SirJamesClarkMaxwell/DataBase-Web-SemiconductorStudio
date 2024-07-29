@@ -21,4 +21,6 @@ namespace UI::Components
 	void drawAdvancedTable();
 	void Demo_LinePlots();
 	void drawGeneratingCurvesPanel(GeneratingCharacteristicsPanelData &data);
+	void LamberWWindow(ImVec2 &plot_size, ImPlotFlags plot_flags, UI::Data::PlotProperties &plotProperties);
+	void TestFittingAndMC(JunctionFitMaster::FittingTesting &data);
 }

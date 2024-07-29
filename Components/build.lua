@@ -49,6 +49,7 @@ project "Components"
 
     filter { "configurations:Debug" }
         runtime "Debug"
+        staticruntime "off"
     filter { "configurations:Release" }
         runtime "Release"
 

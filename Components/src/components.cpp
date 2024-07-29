@@ -33,6 +33,7 @@ namespace UI::Components
 		drawContentBrowserData(state->dataPreview);
 		drawPlots(state->dataPreview);
 		drawGeneratingCurvesPanel(state->generatingCharacteristicsData);
+		TestFittingAndMC(state->fittingTestingData);
 		/*
 		ImGui::Begin("Advanced Table");
 		Demo_LinePlots();
@@ -45,7 +46,6 @@ namespace UI::Components
 		*/
 		ImPlot::ShowDemoWindow();
 		ImGui::ShowDemoWindow();
-		/**/
 	}
 	bool operator==(const Characteristic &lhs, const Characteristic &rhs) { return lhs.getTemperature() == rhs.getTemperature(); };
 	void drawPlots(Data::DataPreview &dataPreview)
@@ -84,7 +84,7 @@ namespace UI::Components
 				ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Linear);
 			for (auto &item : plotData.characteristics)
 				if (item)
-					plotOneCharacteristic(item, false);
+					plotOneCharacteristic(item, true);
 
 			ImPlot::EndPlot();
 		}
@@ -92,13 +92,9 @@ namespace UI::Components
 	void plotOneCharacteristic(UI::Data::Characteristic &characteristic, bool log)
 	{
 		auto &V = characteristic.getVoltage();
-		// std::vector<double> V = {1,2,3,4,5,6,7,8,9};
-		auto &I = characteristic.getCurrent();
-		if (log)
-			auto &I = characteristic.getLogCurrent();
-		// std::vector<double > I= { 1,2,3,4,5,6,7,8,9 };
+		auto &I = !log ? characteristic.getCurrent() : characteristic.getLogCurrent();
 		std::string title = "I(V) " + characteristic.name + " K";
-		// ImPlot::SetNextLineStyle(characteristic.m_color);
+		ImPlot::SetNextLineStyle(characteristic.m_color);
 
 		// ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
 		ImPlot::PlotLine(title.c_str(), V.data(), I.data(), V.size(), ImPlotLineFlags_Segments);
@@ -310,80 +306,54 @@ namespace UI::Components
 	}
 	void drawGeneratingCurvesPanel(GeneratingCharacteristicsPanelData &data)
 	{
-
+#define string(x) std::to_string(x)
 		ImGui::Begin("Enter Parameters");
-		static Characteristic characteristic;
-		static double VStart = 0;
-		static double VEnd = 3;
-		static double Step = 0.01;
-		ImGui::InputDouble("V-start", &VStart, 0.01f, 1.0f, "%.2f");
-		ImGui::InputDouble("V-end", &VEnd, 0.1f, 1.0f, "%.2f");
-		ImGui::InputDouble("Step", &Step, 0.1f, 1.0f, "%.4f");
-		std::vector<double> Voltage = generate_range(VStart, VEnd, Step);
-		characteristic.getVoltage() = Voltage;
-		characteristic.getCurrent() = Voltage;
-		characteristic.getDensityCurrent() = Voltage;
-		FourParameters &fourParameters = data.fourParameters;
+
+		static float VStart = 0;
+		static float VEnd = 3;
+		static float Step = 0.01;
+		ImGui::DragFloat("V-start", &VStart, 1, 0, 5);
+		ImGui::DragFloat("V-end", &VEnd, 1, 0, 5);
+		ImGui::DragFloat("Step", &Step, 0.01, 0.0001, 0.1);
+
 		SixParameters &sixParameters = data.sixParameters;
 		ImGui::PushItemWidth(200);
 		ImGui::Separator();
 		ImGui::Text("Four parameter Model");
-		static double I0 = 10e-8;
-		ImGui::InputDouble("I0", &I0, 0.01f, 1.0f, "%.4f");
-		fourParameters.I0 = std::pow(10, I0);
-#define IM_ARRAYSIZE(_ARR) ((int)(sizeof(_ARR) / sizeof(*(_ARR))))
-		static char name[16];
-		static ImGuiInputTextFlags flags = ImGuiInputTextFlags_EscapeClearsAll | ImGuiInputTextFlags_EscapeClearsAll | ImGuiInputTextFlags_NoUndoRedo;
-		ImGui::InputText("Hello", name, IM_ARRAYSIZE(name), flags);
-		characteristic.name = std::to_string(*name);
-		ImGui::InputDouble("A", &fourParameters.A, 0.1f, 1.0f, "%.8f");
-		ImGui::InputDouble("Rs", &fourParameters.Rs, 0.01f, 1.0f, "%.8f");
-		ImGui::InputDouble("Rch", &fourParameters.Rch, 100.0f, 1.0f, "%.8f");
-		ImGui::InputDouble("T", &fourParameters.Temperature, 10.0f, 1.0f, "%.8f");
-		static ImColor color{1, 0, 0, 1};
-		ImGui::ColorEdit4(characteristic.name.c_str(), (float *)&color);
-		characteristic.m_color = color;
+		static double I0 = 1e-10;
+		static double A = 1;
+		static double Rs = 1e-6;
+		static double Rch = 1e7;
+		static double Temperature = 300;
+		ImGui::InputDouble("I0", &I0, 0.01f, 1.0f, "%.10f");
+		ImGui::InputDouble("A", &A, 0.1f, 1.0f, "%.8f");
+		ImGui::InputDouble("Rs", &Rs, 0.01f, 1.0f, "%.8f");
+		ImGui::InputDouble("Rch", &Rch, 100.0f, 1.0f, "%.8f");
+		ImGui::InputDouble("T", &Temperature, 10.0f, 1.0f, "%.8f");
+		ImVec4 color;
+		ImGui::ColorEdit4("color", (float *)&color);
 		if (ImGui::Button("Add 4 Parameter characteristic"))
 		{
+			FourParameters &fourParameters = data.fourParameters;
+			fourParameters.I0 = std::pow(10, I0);
+			Characteristic characteristic;
+			std::vector<double> Voltage = generate_range(VStart, VEnd, Step);
+			characteristic.getVoltage() = Voltage;
+			characteristic.getCurrent() = Voltage;
+			characteristic.getDensityCurrent() = Voltage;
+			auto toString = [](FourParameters c, double T)
+			{ return string(c.I0) + string(c.A) + string(c.Rs) + string(c.Rch) + string(T); };
+			characteristic.name = toString(fourParameters, Temperature);
 
-			std::vector<double> v1, v2;
-			std::vector<double> v1d, v2d;
-			v1 = generate_range(-std::exp(-1), 1, 0.0001);
-			v2 = generate_range(-1, -std::exp(-1), 0.0001);
-
-			v1d.resize(v1.size());
-			v2d.resize(v2.size());
-			for (int i = 0; i < v1.size(); i++)
-			{
-				std::complex<double> z{v1[i], v1[i]};
-				v1d[i] = LamberWN::LambertW(z, 0).imag();
-			}
-			for (int i = 0; i < v2.size(); i++)
-			{
-				std::complex<double> z{v2[i], 0};
-				v2d[i] = LamberWN::LambertW(z, 1).real();
-			}
-			static Characteristic c1;
-			static Characteristic c2;
-			c1.getVoltage() = v1d;
-			c2.getVoltage() = v2d;
-
-			c1.getCurrent() = v1;
-			c2.getCurrent() = v2;
-			data.characteristics.push_back(c1);
-			data.characteristics.push_back(c2);
-			c1.name = "c1";
-			c1.m_color = ImColor(1, 0, 0, 255);
-			c2.name = "c2";
-			c2.m_color = ImColor(0, 0, 1, 255);
 			// double &I0 = fourParameters.I0;
 			// double &A = fourParameters.A;
 			// double &Rs = fourParameters.Rs;
 			// double &Rch = fourParameters.Rch;
 			// double &T = fourParameters.Temperature;
-			// GeneratingCharacteristicsPanelData::CalculateCurrent(characteristic, 1, 1e-10, 1e-3, 1e7, 300);
-			// characteristic.fourParameters = fourParameters;
-			// data.characteristics.push_back(characteristic);
+			GeneratingCharacteristicsPanelData::CalculateCurrent(characteristic, 1, 1e-8, 1e-6, 1e7, Temperature);
+			characteristic.fourParameters = fourParameters;
+			// Characteristic characteristicToPush(characteristic);
+			data.characteristics.push_back(characteristic);
 			// std::cout << "Characteristic with this parameters has been pushed" << "I0: " << I0 << " "
 			//		  << "A: " << A << " "
 			//		  << "Rs: " << Rs << " "
@@ -392,7 +362,7 @@ namespace UI::Components
 		}
 
 		ImGui::Separator();
-		ImGui::Text("Six parameter Moduel");
+		ImGui::Text("Six parameter Model");
 		ImGui::InputDouble(" I02", &sixParameters.I0, 0.01f, 1.0f, "%.8f");
 		ImGui::InputDouble(" A2", &sixParameters.A, 0.01f, 1.0f, "%.8f");
 		ImGui::InputDouble(" Rs2", &sixParameters.Rs, 0.01f, 1.0f, "%.8f");
@@ -431,7 +401,7 @@ namespace UI::Components
 		ImGui::Separator();
 		ImGui::PopItemWidth();
 
-		if (ImGui::BeginTable("characteristics", 5, ImGuiTabBarFlags_None))
+		if (ImGui::BeginTable("characteristics", 5, ImGuiTableFlags_None | ImGuiTableFlags_Resizable))
 		{
 			ImGui::TableSetupColumn("Checked");
 			ImGui::TableSetupColumn("Name");
@@ -450,7 +420,7 @@ namespace UI::Components
 				ImGui::TableNextColumn();
 				ImGui::Text(std::to_string(item.getTemperature()).c_str());
 				ImGui::TableNextColumn();
-#define string(x) std::to_string(x)
+
 				double &A = item.fourParameters.A;
 				double &I0 = item.fourParameters.I0;
 				double &Rs = item.fourParameters.Rs;
@@ -480,92 +450,37 @@ namespace UI::Components
 			data.characteristics.clear();
 		static bool log = false;
 		ImGui::Checkbox("log", &log);
-		ImGui::SameLine();
-		// ImVec2 plot_size = ImVec2(800, 600); // Adjust the plot size as needed
-		// ImPlotFlags plot_flags = ImPlotFlags_; // Adjust the plot flags as needed
-		/*
-				if (ImPlot::BeginPlot("Lambert W Function", plot_size, plot_flags))
-				{
-					ImPlot::SetupAxes("V", "I", plot_flags, plot_flags);
 
-					// Assuming plotProperties is a global or accessible struct
-					// with members lin_x_scale and lin_y_scale indicating whether
-					// the respective axes should be linear or logarithmic
-					if (!plotProperties.lin_x_scale)
-					{
-						ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Linear);
-					}
-					if (!plotProperties.lin_y_scale)
-					{
-						ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Linear);
-					}
+		if (ImPlot::BeginPlot("testing Plot", plot_size, plot_flags))
+		{
+			auto transformForwardLinear = [](double v, void *)
+			{
+				return std::log(v);
+			};
 
-					static std::vector<double> v1, v2;
-					static std::vector<double> v1d, v2d;
-					v1 = generate_range(-std::exp(-1), 1, 0.01);
-					v2 = generate_range(-1, -std::exp(-1), 0.01);
+			auto transformForwardNaturalLog = [](double v, void *)
+			{
+				return std::exp(v);
+			};
+			// setupPlot(plot_flags, plotData);
+			ImPlot::SetupAxes("V", "I", plot_flags, plot_flags);
+			if (!plotProperties.lin_x_scale)
+				ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Linear);
+			if (log)
+				ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
 
-					v1d.resize(v1.size());
-					v2d.resize(v2.size());
+			for (auto &item : data.characteristics)
+				if (item)
+					plotOneCharacteristic(item, false);
+			ImPlot::EndPlot();
+		}
 
-					for (size_t i = 0; i < v1.size(); i++)
-					{
-						std::complex<double> z{v1[i], v1[i]};
-						v1d[i] = LamberWN::LambertW(z, 0).imag();
-					}
-					for (size_t i = 0; i < v2.size(); i++)
-					{
-						std::complex<double> z{v2[i], 0};
-						v2d[i] = LamberWN::LambertW(z, 1).real();
-					}
-
-					ImPlot::SetNextLineStyle(ImVec4(1, 0, 0, 1)); // Red color for the first branch
-					ImPlot::PlotLine("Branch 0", v1d.data(), v1.data(), v1.size(), ImPlotLineFlags_None);
-
-					ImPlot::SetNextLineStyle(ImVec4(0, 0, 1, 1)); // Blue color for the second branch
-					ImPlot::PlotLine("Branch 1", v2d.data(), v2.data(), v2.size(), ImPlotLineFlags_None);
-
-					ImPlot::EndPlot();
-				}
-		*/
-		// if (ImPlot::BeginPlot("testing Plot", plot_size, plot_flags))
-		//{
-		//	// setupPlot(plot_flags, plotData);
-		//	ImPlot::SetupAxes("V", "I", plot_flags, plot_flags);
-		//	if (!plotProperties.lin_x_scale)
-		//		ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Linear);
-		//	if (!plotProperties.lin_y_scale)
-		//		ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Linear);
-		//	/*
-		//	for (auto& item : data.characteristics)
-		//		if (item)
-		//			plotOneCharacteristic(item, false);
-		//	*/
-		//	static std::vector<double> v1, v2;
-		//	static std::vector<double> v1d, v2d;
-		//	v1 = generate_range(-std::exp(-1), 1, 0.01);
-		//	v2 = generate_range( -1,-std::exp(-1), 0.01);
-
-		//	v1d.resize(v1.size());
-		//	v2d.resize(v2.size());
-		//	for (int i = 0; i < v1.size(); i++)
-		//	{
-		//		std::complex<double> z{ v1[i], v1[i] };
-		//		v1d[i] = LamberWN::LambertW(z, 0).imag();
-		//	}
-		//	for (int i = 0; i < v2.size(); i++)
-		//	{
-		//		std::complex<double> z{ v2[i], 0 };
-		//		v2d[i] = LamberWN::LambertW(z, 1).real();
-		//	}
-		//	//ImPlot::SetNextLineStyle(ImColor(1,0,0,1));
-		//	ImPlot::PlotLine("c1", v1d.data(), v1.data(), v1.size(), ImPlotLineFlags_None);
-		//	//ImPlot::SetNextLineStyle(ImColor(0, 0, 1, 1));
-		//	ImPlot::PlotLine("c2", v2d.data(), v2.data(), v2.size(), ImPlotLineFlags_None);
-		//	ImPlot::EndPlot();
-		//}
 		ImGui::End();
 
+		LamberWWindow(plot_size, plot_flags, plotProperties);
+	}
+	void LamberWWindow(ImVec2 &plot_size, ImPlotFlags plot_flags, UI::Data::PlotProperties &plotProperties)
+	{
 		ImGui::Begin("Lambert W");
 		static float WUpStart = -std::exp(-1);
 		static float WUpEnd = 1;
@@ -576,10 +491,10 @@ namespace UI::Components
 		static bool UPswap = true;
 		ImGui::PushItemWidth(200);
 		ImGui::Separator();
-		 ImGui::DragFloat("Up Start", &WUpStart, 0.05, -std::exp(-1), 5);
-		 ImGui::SameLine();
-		 ImGui::DragFloat("Up End", &WUpEnd, 0.05, WUpStart, 5);
-		 ImGui::SameLine();
+		ImGui::DragFloat("Up Start", &WUpStart, 0.05, -std::exp(-1), 5);
+		ImGui::SameLine();
+		ImGui::DragFloat("Up End", &WUpEnd, 0.05, WUpStart, 5);
+		ImGui::SameLine();
 		// ImGui::DragFloat("Up Step", &WUpStep, 0.0001f, 0.01, 0.2);
 		// ImGui::SameLine();
 		ImGui::Checkbox("Up useSameArguments", &UpUseSameArguments);
@@ -623,11 +538,11 @@ namespace UI::Components
 		static bool DownBranch0 = true;
 		static bool DownSwap = false;
 		ImGui::PushItemWidth(200);
-		 ImGui::Separator();
-		 ImGui::DragFloat("Down Start", &WDownStart, 0.05, -10, -std::exp(-1));
-		 ImGui::SameLine();
-		 ImGui::DragFloat("Down End", &WDownEnd, 0.05, -std::exp(-1), WDownStart);
-		 ImGui::SameLine();
+		ImGui::Separator();
+		ImGui::DragFloat("Down Start", &WDownStart, 0.05, -10, -std::exp(-1));
+		ImGui::SameLine();
+		ImGui::DragFloat("Down End", &WDownEnd, 0.05, -std::exp(-1), WDownStart);
+		ImGui::SameLine();
 		// ImGui::DragFloat("Down Step", &WDownStep, 0.0001f, 0.01, 0.2);
 		// ImGui::SameLine();
 		ImGui::Checkbox("Down useSameArguments", &DownUseSameArguments);
@@ -686,4 +601,36 @@ namespace UI::Components
 
 		ImGui::End();
 	}
+	void TestFittingAndMC(JunctionFitMaster::FittingTesting &data)
+	{
+
+		ImGui::Begin("Plotting");
+		data.DrawPlotData();
+		ImGui::End();
+
+		ImGui::Begin("Actions");
+		data.DrawActionsPanel();
+		ImGui::End();
+		ImGui::Begin("Table");
+		data.DrawTable();
+		ImGui::End();
+
+		//! NumericStormWrapper
+		// todo: 4ParameterModel
+
+		// todo: load characteristic
+		// todo: display in table
+		// todo: plot it
+
+		// todo: generating I(V) based on the parameters
+		// todo: adding noise
+		// todo: set starting parameters
+		// todo: set color
+		// todo: (auto)range
+		// todo: MC
+
+		//* later
+		// todo: plot MC
+	};
+
 };
