@@ -1,5 +1,6 @@
 #include "pch.hpp"
 #include "TestingFittingAndMC.hpp"
+#include "IVFitter.hpp"
 
 namespace UI::Data::JunctionFitMaster
 {

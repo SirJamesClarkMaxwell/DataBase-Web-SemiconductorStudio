@@ -238,7 +238,7 @@ void UI::Data::current(double &V, double &I, double &I0, double &A, double &Rsch
     // std::cout << "V / (A * k * T): " << V / (A * k * T) << std::endl;
     // std::cout << "std::exp(V / (A * k * T)) " << std::exp(V / (A * k * T)) << std::endl;
     // std::cout << "x " << x << std::endl;
-    I = I_lw + (V - I_lw * Rs) / Rsch + std::pow((V - I_lw * Rs), 1) / std::pow(10, 9);
+    I = I_lw + (V - I_lw * Rs) / Rsch;
     // I = c1.real();
 }
 
