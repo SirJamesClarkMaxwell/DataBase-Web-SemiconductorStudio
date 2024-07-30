@@ -149,7 +149,7 @@ namespace UI::Data::JunctionFitMaster
 	struct TemporaryVariables
 	{
 		bool exits = false;
-		Characteristic *characteristic;
+		Characteristic characteristic;
 		float downRange;
 		float upperRange;
 		operator bool() { return exits; };

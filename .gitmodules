@@ -2,3 +2,6 @@
 [submodule "Vendor/yaml-cpp"]
 	path = Vendor/yaml-cpp
 	url = https://github.com/ArnoXX/yaml-cpp
+[submodule "Vendor/NumericStorm/NumericStorm"]
+	path = Vendor/NumericStorm/NumericStorm
+	url = https://github.com/SirJamesClarkMaxwell/NumericStorm
