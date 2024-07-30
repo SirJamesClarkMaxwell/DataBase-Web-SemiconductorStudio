@@ -18,8 +18,17 @@ namespace UI::Data::JunctionFitMaster
                 item.selected = true;
         ImGui::SameLine();
         if (ImGui::Button("UnSelect All"))
+        {
             for (auto &item : m_characteristics)
                 item.selected = false;
+            characteristicIndex = -1;
+        }
+        if (ImGui::Button("SetActive Characteristic"))
+        {
+            for (auto const &[index, item] : std::views::enumerate(m_characteristics))
+                if (item)
+                    characteristicIndex = index;
+        }
 
         ImGui::Separator();
         if (ImGui::BeginTable("Legend", 2, tableSettings.basicTableFlags))
@@ -58,34 +67,76 @@ namespace UI::Data::JunctionFitMaster
         ImGui::Checkbox("y log", &plotSettings.yLog);
         if (ImGui::Button("Set Range"))
             SetRange();
+        ImGui::SameLine();
         if (ImGui::Button("Fix Rs"))
             FixRs();
+        ImGui::SameLine();
         if (ImGui::Button("Fix Rsh"))
             FixRsh();
+        ImGui::SameLine();
         if (ImGui::Button("PreFit"))
             PreFit();
 
         float min{0.001}, max{5}, step{0.01};
 
-        if (tmp)
+        if (characteristicIndex != -1)
         {
             Characteristic::ReturningType returningType = Characteristic::ReturningType::Voltage;
-            Characteristic &tmpCharac = tmp.characteristic;
-            float min, max, step;
-            min = tmpCharac.get(returningType, false)[0];
-            max = tmpCharac.get(returningType, false)[tmpCharac.get(returningType, false).size() - 1];
-            step = tmpCharac.get(returningType, false)[1] - min;
-        }
+            Characteristic &tmpCharac = m_characteristics[characteristicIndex];
 
-        ImGui::SliderFloat("Down Range", &tmp.downRange, min, max);
-        ImGui::SameLine();
-        ImGui::Text(std::to_string(tmp.downRange).c_str());
-        ImGui::SliderFloat("Up Range", &tmp.upperRange, min, max);
-        ImGui::SameLine();
-        ImGui::Text(std::to_string(tmp.upperRange).c_str());
-        ImGui::SameLine();
+            int &lowerSlider = (int &)tmpCharac.lowerIndex;
+            int &upperSlider = (int &)tmpCharac.upperIndex;
+
+            int min, max, step;
+            min = 0;
+            max = tmpCharac.get(returningType, false).size() - 1;
+            step = tmpCharac.get(returningType, false)[1] - min;
+
+            if (ImGui::SliderInt("Down Range", &lowerSlider, 0, upperSlider, std::to_string(tmpCharac.get(returningType)[lowerSlider]).c_str()))
+            {
+                tmpCharac.updateRangedCharacteristic();
+                auto Voltage = Characteristic::ReturningType::Voltage;
+                auto Current = Characteristic::ReturningType::Current;
+                auto &originalV = m_characteristics[characteristicIndex].get(Voltage, true);
+                auto &originalI = m_characteristics[characteristicIndex].get(Current, true);
+                LinearRegression fitter{};
+                std::valarray<double> V, I;
+                V = std::valarray<double>(originalV.data(), (int)originalV.size());
+                I = std::valarray<double>(originalI.data(), (int)originalI.size());
+                fitter(I, V);
+                m_characteristics[characteristicIndex].parameters.Rp = 1 / fitter.getB();
+                std::cout << "1/ fitter.getB(): " << 1 / fitter.getB() << std::endl;
+                std::cout << "fitter.getB()  " << fitter.getB() << std::endl;
+            }
+            ImGui::SameLine();
+            ImGui::Text(std::to_string(tmpCharac.get(returningType)[lowerSlider]).c_str());
+            if (ImGui::SliderInt("Up Range", &upperSlider, lowerSlider, max, std::to_string(tmpCharac.get(returningType)[upperSlider]).c_str()))
+            {
+                tmpCharac.updateRangedCharacteristic();
+                auto Voltage = Characteristic::ReturningType::Voltage;
+                auto Current = Characteristic::ReturningType::Current;
+                auto &originalV = m_characteristics[characteristicIndex].get(Voltage, true);
+                auto &originalI = m_characteristics[characteristicIndex].get(Current, true);
+                LinearRegression fitter{};
+                std::valarray<double> V, I;
+                V = std::valarray<double>(originalV.data(), (int)originalV.size());
+                I = std::valarray<double>(originalI.data(), (int)originalI.size());
+                fitter(I, V);
+                m_characteristics[characteristicIndex].parameters.Rp = fitter.getB();
+                std::cout << "1/ fitter.getB(): " << 1 / fitter.getB() << std::endl;
+                std::cout << "fitter.getB()  " << fitter.getB() << std::endl;
+            }
+            ImGui::SameLine();
+            ImGui::Text(std::to_string(tmpCharac.get(returningType)[upperSlider]).c_str());
+            ImGui::SameLine();
+        }
         ImGui::End();
     }
+    void Characteristic::updateRangedCharacteristic()
+    {
+        for (const int &item : std::ranges::iota_view(1, 3))
+            rangedData.get(static_cast<ReturningType>(item)) = std::vector<double>{originalData.get(static_cast<ReturningType>(item)).begin() + lowerIndex, originalData.get(static_cast<ReturningType>(item)).begin() + upperIndex};
+    };
 
     void FittingTesting::plottingCharacteristics()
     {
@@ -95,16 +146,9 @@ namespace UI::Data::JunctionFitMaster
         if (ImPlot::BeginPlot("characteristic", plotSettings.plot_size, plotSettings.plotBaseFlags))
         {
             auto transformForwardLinear = [](double v, void *)
-            {
-                // std::cout << v << std::endl;
-                return std::log(std::abs(v));
-            };
-
+            { return std::log(std::abs(v)); };
             auto transformForwardNaturalLog = [](double v, void *)
-            {
-                // std::cout << v << std::endl;
-                return std::exp(v);
-            };
+            { return std::exp(v); };
 
             ImPlot::SetupAxes("V", "I", plotSettings.plotBaseFlags, plotSettings.plotBaseFlags);
             ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Linear);
@@ -118,8 +162,17 @@ namespace UI::Data::JunctionFitMaster
             for (auto &item : m_characteristics)
                 if (item)
                     plotOneCharacteristic(item, false, false);
-            ImPlot::PlotInfLines("Lower bound", &tmp.downRange, 1);
-            ImPlot::PlotInfLines("Upper bound", &tmp.upperRange, 1);
+            if (characteristicIndex != -1)
+            {
+                Characteristic::ReturningType returningType = Characteristic::ReturningType::Voltage;
+                Characteristic &tmpCharac = m_characteristics[characteristicIndex];
+
+                int &lowerSlider = (int &)tmpCharac.lowerIndex;
+                int &upperSlider = (int &)tmpCharac.upperIndex;
+
+                ImPlot::PlotInfLines("Lower bound", &tmpCharac.get(returningType)[lowerSlider], 1);
+                ImPlot::PlotInfLines("Upper bound", &tmpCharac.get(returningType)[upperSlider - 1], 1);
+            }
             ImPlot::EndPlot();
         }
         ImGui::End();
@@ -133,6 +186,12 @@ namespace UI::Data::JunctionFitMaster
         std::string title = "I(V) " + item.name + " K";
         ImPlot::SetNextLineStyle(item.m_color);
         ImPlot::PlotLine(title.c_str(), V.data(), I.data(), V.size());
+
+        auto V1 = logx ? item.getLog(ReturningType::Voltage, true) : item.get(ReturningType::Voltage, true);
+        auto I1 = logy ? item.getLog(ReturningType::Current, true) : item.get(ReturningType::Current, true);
+        std::string title1 = "I(V) ranged" + item.name + " K";
+        ImPlot::SetNextLineStyle((ImVec4)ImColor(24, 249, 223, 255));
+        ImPlot::PlotLine(title1.c_str(), V1.data(), I1.data(), V1.size());
     };
     void FittingTesting::DrawActionsPanel()
     {
@@ -158,10 +217,33 @@ namespace UI::Data::JunctionFitMaster
 
     void FittingTesting::FixRs()
     {
+        auto Voltage = Characteristic::ReturningType::Voltage;
+        auto Current = Characteristic::ReturningType::Current;
+        auto &originalV = m_characteristics[characteristicIndex].get(Voltage, true);
+        auto &originalI = m_characteristics[characteristicIndex].get(Current, true);
+        LinearRegression fitter{};
+        std::valarray<double> V, I;
+        V = std::valarray<double>(originalV.data(), originalV.size());
+        I = std::valarray<double>(originalI.data(), originalI.size());
+        fitter(I, V);
+        m_characteristics[characteristicIndex].parameters.Rs = fitter.getB();
+        std::cout << "Rs: (fitter.getB() ) " << m_characteristics[characteristicIndex].parameters.Rs << std::endl;
+        std::cout << "Rs: V[0]/I[0] " << V[0] / I[0] << std::endl;
     }
 
     void FittingTesting::FixRsh()
     {
+        auto Voltage = Characteristic::ReturningType::Voltage;
+        auto Current = Characteristic::ReturningType::Current;
+        auto &originalV = m_characteristics[characteristicIndex].get(Voltage, true);
+        auto &originalI = m_characteristics[characteristicIndex].get(Current, true);
+        LinearRegression fitter{};
+        std::valarray<double> V, I;
+        V = std::valarray<double>(originalV.data(), (int)originalV.size());
+        I = std::valarray<double>(originalI.data(), (int)originalI.size());
+        fitter(I, V);
+        m_characteristics[characteristicIndex].parameters.Rp = 1 / fitter.getB();
+        std::cout << "Rp: ( 1/ fitter.getAB) ) " << m_characteristics[characteristicIndex].parameters.Rp << std::endl;
     }
 
     void FittingTesting::PreFit()

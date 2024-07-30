@@ -3,6 +3,7 @@
 #include "LambertW.h"
 #include "imgui.h"
 #include "implot.h"
+#include ".\linerRegression.hpp"
 // #include <NumericStorm.hpp>
 
 namespace UI::Data::JunctionFitMaster
@@ -20,7 +21,7 @@ namespace UI::Data::JunctionFitMaster
 		double A = 1;
 		double I0 = std::pow(10, -19);
 		double Rs = 10;
-		double Rch = 1000;
+		double Rp = 1000;
 		double Temperature = 300;
 	};
 	//! Remove after including NumericStorm
@@ -103,7 +104,8 @@ namespace UI::Data::JunctionFitMaster
 		bool selected = true;
 		ImVec4 m_color{1, 0, 0, 1};
 		operator bool() { return selected; };
-
+		size_t lowerIndex{ 0 };
+		size_t upperIndex{ 10 };
 		std::vector<double> getLog(const ReturningType &type, bool ranged = false)
 		{
 			return !ranged ? originalData.getLog(type) : rangedData.getLog(type);
@@ -112,6 +114,8 @@ namespace UI::Data::JunctionFitMaster
 		{
 			return !ranged ? originalData.get(type) : rangedData.get(type);
 		};
+		void updateRangedCharacteristic();
+		FourParameters parameters;
 
 	private:
 		double m_temperature{-1};
@@ -164,7 +168,7 @@ namespace UI::Data::JunctionFitMaster
 	public:
 		PlotSettings plotSettings;
 		TableSettings tableSettings;
-		TemporaryVariables tmp;
+		int characteristicIndex{-1};
 		ContentBrowserData contentBrowserData;
 		void DrawPlotData();
 		void DrawActionsPanel();

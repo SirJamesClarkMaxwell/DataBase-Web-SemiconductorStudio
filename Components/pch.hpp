@@ -17,5 +17,8 @@
 #include <limits>
 #include <iomanip>
 #include <cmath>
-//#include "nistd.h"
+#include <ranges>
+#include <cassert>
+#include <numeric>
+#include <stdexcept>
 #include <stdlib.h>
