@@ -4,6 +4,7 @@
 #include "imgui.h"
 #include "implot.h"
 #include ".\linerRegression.hpp"
+#include "IVFitter.hpp"
 // #include <NumericStorm.hpp>
 
 namespace UI::Data::JunctionFitMaster
@@ -35,80 +36,57 @@ namespace UI::Data::JunctionFitMaster
 		double Temperature = 300;
 	};
 	//! Remove after including NumericStorm
-	namespace NumericStorm
+
+	class JFMData : public NumericStorm::Fitting::Data
 	{
-		class Data
+		using vector = std::vector<double>;
+
+	public:
+		enum class ReturningType
 		{
-			using vector = std::vector<double>;
-
-		public:
-			enum class ReturningType
-			{
-				None = 0,
-				Voltage,
-				Current,
-				DensityCurrent
-			};
-
-			Data() = default;
-			Data(const vector &V, const vector &I, const vector &J)
-				: V{V}, I{I}, J{J} {};
-			std::vector<double> &get(const ReturningType &item)
-			{
-
-				switch (item)
-				{
-				case ReturningType::Voltage:
-					return V;
-				case ReturningType::Current:
-					return I;
-				case ReturningType::DensityCurrent:
-					return J;
-				}
-			};
-			std::vector<double> &getLog(const ReturningType item)
-			{
-				std::vector<double> originalItem(get(item));
-
-				auto logf = [](double in)
-				{ return std::log(std::abs(in)); };
-				std::vector<double> logItem(originalItem.size());
-				std::transform(originalItem.begin(), originalItem.end(), logItem.begin(), logf);
-				return logItem;
-			};
-
-		private:
-			std::vector<double> V;
-			std::vector<double> I;
-			std::vector<double> J;
+			Voltage,
+			Current,
+			DensityCurrent
 		};
-		class Model
+
+		JFMData()
+			: Data(3) {}
+		JFMData(const vector &V, const vector &I, const vector &J)
 		{
+			m_data[static_cast<int>(ReturningType::Voltage)] = V;
+			m_data[static_cast<int>(ReturningType::Current)] = I;
+			m_data[static_cast<int>(ReturningType::DensityCurrent)] = J;
 		};
-		class Fitter
+		std::vector<double> &get(const ReturningType &name)
 		{
+			return m_data[static_cast<int>(name)];
 		};
-		class MonteCarloSimulation
+		std::vector<double> &getLog(const ReturningType item)
 		{
+			std::vector<double> originalItem(get(item));
+
+			auto logf = [](double in)
+			{ return std::log(std::abs(in)); };
+			std::vector<double> logItem(originalItem.size());
+			std::transform(originalItem.begin(), originalItem.end(), logItem.begin(), logf);
+			return logItem;
 		};
-	}
-	////////////////
-	class FourParameterModel : public NumericStorm::Model
-	{
 	};
+
+	////////////////
 
 	class Characteristic
 	{
 	private:
-		using Data = NumericStorm::Data;
+		using Data = JFMData;
 
 	public:
-		using ReturningType = NumericStorm::Data::ReturningType;
+		using ReturningType = JFMData::ReturningType;
 		Characteristic() = default;
 		Characteristic(const std::filesystem::path &path)
 			: m_path(path) { readData(); };
-		NumericStorm::Data originalData;
-		NumericStorm::Data rangedData;
+		JFMData originalData;
+		JFMData rangedData;
 		double getTemperature() { return m_temperature; };
 		std::string name;
 		bool selected = true;

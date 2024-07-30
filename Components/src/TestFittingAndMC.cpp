@@ -1,6 +1,5 @@
 #include "pch.hpp"
 #include "TestingFittingAndMC.hpp"
-#include "IVFitter.hpp"
 
 namespace UI::Data::JunctionFitMaster
 {
@@ -180,7 +179,7 @@ namespace UI::Data::JunctionFitMaster
 	}
 	void FittingTesting::plotOneCharacteristic(Characteristic &item, bool logy, bool logx)
 	{
-		using ReturningType = NumericStorm::Data::ReturningType;
+		using ReturningType = JFMData::ReturningType;
 		auto V = logx ? item.getLog(ReturningType::Voltage, false) : item.get(ReturningType::Voltage, false);
 		auto I = logy ? item.getLog(ReturningType::Current, false) : item.get(ReturningType::Current, false);
 
