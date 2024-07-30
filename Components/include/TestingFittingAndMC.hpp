@@ -15,13 +15,23 @@ namespace UI::Data::JunctionFitMaster
 
 	bool checkExistence(const std::vector<Characteristic> &destination, const std::string &item);
 
+	enum class ParametersNames
+	{
+		A,
+		I0,
+		Rs,
+		Rp,
+	};
 	struct FourParameters
 	{
+
 		FourParameters() = default;
-		double A = 1;
-		double I0 = std::pow(10, -19);
-		double Rs = 10;
-		double Rp = 1000;
+		std::array<double, 4> parameters;
+		double &operator[](const ParametersNames &name) { return parameters[static_cast<int>(name)]; };
+		// double A = 1;
+		// double I0 = std::pow(10, -19);
+		// double Rs = 10;
+		// double Rp = 1000;
 		double Temperature = 300;
 	};
 	//! Remove after including NumericStorm
@@ -104,8 +114,8 @@ namespace UI::Data::JunctionFitMaster
 		bool selected = true;
 		ImVec4 m_color{1, 0, 0, 1};
 		operator bool() { return selected; };
-		size_t lowerIndex{ 0 };
-		size_t upperIndex{ 10 };
+		size_t lowerIndex{0};
+		size_t upperIndex{10};
 		std::vector<double> getLog(const ReturningType &type, bool ranged = false)
 		{
 			return !ranged ? originalData.getLog(type) : rangedData.getLog(type);
@@ -163,6 +173,30 @@ namespace UI::Data::JunctionFitMaster
 		std::vector<Characteristic> characteristics{};
 		void readCharacteristic(const std::filesystem::path &path);
 	};
+	struct GeneratingData
+	{
+
+		enum ItemNames
+		{
+			min = 0,
+			max,
+			step
+		};
+
+		struct Params
+		{
+
+			Params() = default;
+			std::array<float, 3> items;
+			float value;
+			float &operator[](const ItemNames &name) { return items[name]; };
+		};
+
+		Params &operator[](const ParametersNames &name) { return params[static_cast<int>(name)]; };
+		ParametersNames option;
+		std::vector<std::string> names{"A   ", "I0  ", "Rs  ", "Rsh "};
+		std::array<Params, 4> params;
+	};
 	class FittingTesting
 	{
 	public:
@@ -170,6 +204,7 @@ namespace UI::Data::JunctionFitMaster
 		TableSettings tableSettings;
 		int characteristicIndex{-1};
 		ContentBrowserData contentBrowserData;
+		GeneratingData generatingData;
 		void DrawPlotData();
 		void DrawActionsPanel();
 		void DrawTable();
@@ -178,6 +213,7 @@ namespace UI::Data::JunctionFitMaster
 
 	private:
 		bool m_openedContentBrowserData = false;
+		bool m_openGenerateData = false;
 
 	private:
 		void drawLegend();
@@ -194,6 +230,10 @@ namespace UI::Data::JunctionFitMaster
 		void readAllDataFromDirectory(const std::filesystem::path &rootPath, const std::filesystem::path &currentPath);
 
 		void GenerateCharacteristic();
+		void DrawSingleRangeGenerationOption(const std::string &name, GeneratingData::Params &destination, const int &i, int &ID);
+		void generate();
+		void GenerateRange();
+
 		void Fit();
 		void DoMonteCarloSimulation();
 		void PlotMonteCarloResults();
