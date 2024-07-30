@@ -10,8 +10,7 @@ project "Web-DataBase-SemiconductorStudio"
     files {
         "%{prj.location}/**.cpp",
         "%{prj.location}/**.hpp",
-        "%{prj.location}/Vendor/nlohmann/**.hpp",
-        "%{wks.location}/Vendor/NumericStorm/NumericStorm/NumericStorm/headers/**.hpp"
+        "%{prj.location}/Vendor/nlohmann/**.hpp"
 
     }
 
@@ -32,8 +31,7 @@ project "Web-DataBase-SemiconductorStudio"
                   "%{wks.location}/Vendor/curl/curl",
                   "%{wks.location}/Vendor/cpr",
                   "%{wks.location}/Vendor/cpr/cpr",
-                  "%{wks.location}/Vendor/cpr/includes/cpr",
-                  "%{wks.location}/Vendor/NumericStorm/NumericStorm/NumericStorm/headers"
+                  "%{wks.location}/Vendor/cpr/includes/cpr"
 
     }
     targetdir ( "%{wks.location}/bin/%{prj.name}-%{cfg.buildcfg}" )

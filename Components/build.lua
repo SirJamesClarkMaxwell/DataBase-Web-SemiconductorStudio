@@ -10,6 +10,7 @@ project "Components"
         "%{prj.location}/**.h",
         
         "%{prj.location}/src/**.cpp",
+        "%{wks.location}/Vendor/NumericStorm/NumericStorm/NumericStorm/headers/**.hpp"
         -- "%{wks.location}/Vendor/LambertW/**.cpp",
         -- "%{wks.location}/Vendor/LambertW/**.h"
         
@@ -31,6 +32,7 @@ project "Components"
                   "%{wks.location}/Vendor/nlohmann",
                   "%{wks.location}/Vendor/yaml-cpp/include",
                   "%{wks.location}/Vendor/yaml-cpp/include/yaml-cpp",
+                   "%{wks.location}/Vendor/NumericStorm/NumericStorm/NumericStorm/headers/**"
                 --   "%{wks.location}/Vendor/LambertW/",
                 --   "%{wks.location}/Vendor/LambertW/"
 -- 
