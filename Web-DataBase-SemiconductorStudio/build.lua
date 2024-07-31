@@ -31,7 +31,9 @@ project "Web-DataBase-SemiconductorStudio"
                   "%{wks.location}/Vendor/curl/curl",
                   "%{wks.location}/Vendor/cpr",
                   "%{wks.location}/Vendor/cpr/cpr",
-                  "%{wks.location}/Vendor/cpr/includes/cpr"
+                  "%{wks.location}/Vendor/cpr/includes/cpr",
+                  "%{wks.location}/Vendor/NumericStorm/NumericStorm/NumericStorm/headers/**",
+
 
     }
     targetdir ( "%{wks.location}/bin/%{prj.name}-%{cfg.buildcfg}" )
@@ -53,6 +55,7 @@ project "Web-DataBase-SemiconductorStudio"
 
     filter { "configurations:Debug" }
         runtime "Debug"
+        staticruntime "on"
     filter { "configurations:Release" }
         runtime "Release"
 

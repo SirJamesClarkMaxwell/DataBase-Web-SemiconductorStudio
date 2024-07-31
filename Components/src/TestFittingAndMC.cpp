@@ -1,3 +1,4 @@
+#pragma once
 #include "pch.hpp"
 #include "TestingFittingAndMC.hpp"
 
@@ -147,7 +148,7 @@ namespace UI::Data::JunctionFitMasterUI
 	}
 	void Characteristic::updateRangedCharacteristic()
 	{
-		for (const int &item : std::ranges::iota_view(1, 3))
+		for (const int &item : std::ranges::iota_view(0, 3))
 			rangedData.get(static_cast<ReturningType>(item)) = std::vector<double>{originalData.get(static_cast<ReturningType>(item)).begin() + lowerIndex, originalData.get(static_cast<ReturningType>(item)).begin() + upperIndex};
 	};
 
@@ -417,7 +418,7 @@ namespace UI::Data::JunctionFitMasterUI
 		if (ImGui::DragFloat3("Voltages", (float *)&voltages, 0.1, 0.001, 4, "%.2f"))
 			utils::generateVectorAtGivenRanges(generatingData.Voltages, voltages[0], voltages[1], voltages[2]);
 
-		for (const auto &[description, destination, i] : std::views::zip(generatingData.names, generatingData.params, std::ranges::iota_view(0, 4)))
+		for (const auto &[description, destination, i] : std::views::zip(generatingData.names, generatingData.params, std::ranges::iota_view(0, 5)))
 			DrawSingleRangeGenerationOption(description, destination, i, id);
 		if (ImGui::Button("Single Shot"))
 			SingleShot();
@@ -456,7 +457,7 @@ namespace UI::Data::JunctionFitMasterUI
 		GeneratingData::Params parameters = generatingData[choosen];
 
 		using names = GeneratingData::ItemNames;
-		int counts = static_cast<int>((parameters[names::max] - parameters[names::min]) / parameters[names::step]) + 1;
+		unsigned int counts = static_cast<unsigned int>((parameters[names::max] - parameters[names::min]) / parameters[names::step]) + 1;
 		std::vector<double> steps(counts);
 
 		utils::generateVectorAtGivenRanges(steps, parameters[names::min], parameters[names::max], parameters[names::step]);
@@ -478,21 +479,37 @@ namespace UI::Data::JunctionFitMasterUI
 	void FittingTesting::SingleShot()
 	{
 		FourParameters parameters;
-		for (const auto &name : std::ranges::iota_view(0, 4))
-			parameters[static_cast<ParametersNames>(name)] = generatingData.params[static_cast<int>(name)].value;
+		std::vector<double> p{1, 1e-8, 1e-6, 1e7};
+		for (const auto &[name, item] : std::views::zip(std::ranges::iota_view(0, 4), p))
+			parameters[static_cast<ParametersNames>(name)] = item;
+		parameters.Temperature = 210;
+		// parameters[static_cast<ParametersNames>(name)] = generatingData.params[static_cast<int>(name)].value;
+
 		Characteristic characteristic;
+		characteristic.parameters = parameters;
 		characteristic.setAll(generatingData.Voltages);
 		generate(characteristic, parameters);
 	};
 	void FittingTesting::generate(Characteristic &characteristic, const FourParameters &parameters)
 	{
 		using namespace JunctionFitMasterFromNS::IVFitting;
-		IVModel(characteristic.originalData, parameters.parameters, parameters.Temperature);
+		IVModel()(characteristic.originalData, parameters.parameters, parameters.Temperature);
 		m_characteristics.push_back(characteristic);
 	};
 
 	void FittingTesting::Fit()
 	{
+		using namespace JunctionFitMasterFromNS::IVFitting;
+		IVFittingSetup setUp{};
+		setUp.simplexMin = Parameters<4>({0.9, 1e-9, 0.9e-6, 0.9e7});
+		setUp.simplexMax = Parameters<4>({1.1, 1e-7, 1.1e-6, 1.1e7});
+		Fitter<IVSimplexOptimizer<IVModel>> fitter = getFitter(setUp);
+		NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
+		double T = m_characteristics[0].getTemperature();
+		auto out = fitter.fit(setUp.simplexMin, data, T);
+		for (const auto& item : out.getParameters())
+			std::cout << item << " " << std::endl;
+
 		std::cout << "PreFit was pressed! " << std::endl;
 	}
 	void FittingTesting::DoMonteCarloSimulation()

@@ -172,7 +172,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 		IVModel() : ModelBase<4, IVAdditionalParameters>(current) {};
 		static void current(Data &data, const Parameters<4> &parameters, const AuxParameters &aParameters)
 		{
-			auto [I0, A, Rs, Rch] = parameters.getParameters();
+			auto [A, I0, Rs, Rch] = parameters.getParameters();
 
 			const double k = 8.6e-5;
 			const double q = 1.60217662e-19;
@@ -185,7 +185,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 			};
 
 			for (const auto &[V, I] : std::views::zip(data[0], data[1]))
-				func(V, I, I0, A, Rs, Rch, aParameters.T);
+				func(V, I, I0, A, Rch, Rs, aParameters.T);
 		};
 	};
 
@@ -205,6 +205,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 
 	struct IVFittingSetup
 	{
+		IVFittingSetup() = default;
 		Parameters<4> simplexMin{};
 		Parameters<4> simplexMax{};
 
@@ -221,30 +222,6 @@ namespace JunctionFitMasterFromNS::IVFitting
 		long int maxIteration{3000};
 	};
 
-	Fitter<IVSimplexOptimizer<IVModel>> getFitter(IVFittingSetup &config)
-	{
-		using Settings = IVSimplexOptimizerSettings<IVModel>;
-		using Builder = typename Settings::IVSimplexOptimizerSettingsBuilder;
+	Fitter<IVSimplexOptimizer<IVModel>> getFitter(IVFittingSetup &config);
 
-		LogCreatorSettings<4> logSettings{config.simplexMin, config.simplexMax};
-		logSettings.setP(config.logP);
-
-		Builder builder{};
-		builder.errorModel(IVError{})
-			.addLogCreatorSettings(logSettings)
-			.addOperationSettings({{BasicOperationsEnum::Reflect, config.reflec_coeff},
-								   {BasicOperationsEnum::Expand, config.expand_coeff},
-								   {BasicOperationsEnum::Contract, config.contract_coeff},
-								   {BasicOperationsEnum::Shrink, config.shrink_coeff}})
-			.minError(config.minError)
-			.maxIteration(config.maxIteration);
-
-		Settings settings = builder.build();
-
-		IVSimplexOptimizer<IVModel> optimizer{settings};
-
-		optimizer.setUp();
-
-		return Fitter<IVSimplexOptimizer<IVModel>>{optimizer};
-	}
 };

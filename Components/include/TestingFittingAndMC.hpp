@@ -47,7 +47,7 @@ namespace UI::Data::JunctionFitMasterUI
 	public:
 		enum class ReturningType
 		{
-			Voltage,
+			Voltage = 0,
 			Current,
 			DensityCurrent
 		};
@@ -109,7 +109,7 @@ namespace UI::Data::JunctionFitMasterUI
 		FourParameters parameters;
 		void setAll(std::vector<double> item)
 		{
-			for (const auto &i : std::ranges::iota_view(0, 4))
+			for (const auto &i : std::ranges::iota_view(0, 3))
 				originalData.get(static_cast<ReturningType>(i)) = item;
 		};
 
@@ -181,7 +181,7 @@ namespace UI::Data::JunctionFitMasterUI
 		Params &operator[](const ParametersNames &name) { return params[static_cast<int>(name)]; };
 		ParametersNames option;
 		std::vector<std::string> names{"A   ", "I0  ", "Rs  ", "Rsh ", "T"};
-		std::array<Params, 4> params;
+		std::array<Params, 5> params;
 		std::vector<double> Voltages;
 	};
 	class FittingTesting

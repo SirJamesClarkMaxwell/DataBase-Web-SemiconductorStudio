@@ -1,3 +1,4 @@
+#pragma once
 #include "pch.hpp"
 #include "tester.hpp"
 #include "main_json.hpp"
