@@ -601,7 +601,7 @@ namespace UI::Components
 
 		ImGui::End();
 	}
-	void TestFittingAndMC(JunctionFitMaster::FittingTesting &data)
+	void TestFittingAndMC(JunctionFitMasterUI::FittingTesting &data)
 	{
 
 		ImGui::Begin("Plotting");

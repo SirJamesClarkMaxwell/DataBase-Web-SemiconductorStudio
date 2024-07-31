@@ -3,7 +3,7 @@
 #include "pch.hpp"
 
 
-namespace JunctionFitMaster::Utils {
+namespace JunctionFitMasterFromNS::Utils {
 
 	class LogDist {
 	public:

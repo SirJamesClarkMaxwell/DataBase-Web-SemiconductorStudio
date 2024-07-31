@@ -22,5 +22,5 @@ namespace UI::Components
 	void Demo_LinePlots();
 	void drawGeneratingCurvesPanel(GeneratingCharacteristicsPanelData &data);
 	void LamberWWindow(ImVec2 &plot_size, ImPlotFlags plot_flags, UI::Data::PlotProperties &plotProperties);
-	void TestFittingAndMC(JunctionFitMaster::FittingTesting &data);
+	void TestFittingAndMC(JunctionFitMasterUI::FittingTesting &data);
 }

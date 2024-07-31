@@ -151,8 +151,8 @@ namespace UI::Data
 		MyData() = default;
 		DataPreview dataPreview{};
 		GeneratingCharacteristicsPanelData generatingCharacteristicsData;
-		using  FittingTesting = UI::Data::JunctionFitMaster::FittingTesting;
-		FittingTesting fittingTestingData;
+		//using  FittingTesting = JunctionFitMaster::FittingTesting;
+		 UI::Data::JunctionFitMasterUI::FittingTesting fittingTestingData;
 	};
 
 	std::vector<double> generate_range(double start, double end, double step);

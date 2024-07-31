@@ -1,8 +1,21 @@
 #include "pch.hpp"
 #include "TestingFittingAndMC.hpp"
 
-namespace UI::Data::JunctionFitMaster
+namespace UI::Data::JunctionFitMasterUI
 {
+	namespace utils
+	{
+		void generateVectorAtGivenRanges(std::vector<double> &destination, double min, double max, double step)
+		{
+			int size = static_cast<int>((max - min) / step) + 1;
+			destination.resize(size);
+
+			int count = -1;
+			std::ranges::generate(destination.begin(), destination.end(), [&]()
+								  { count++; return count * step; });
+		};
+
+	};
 	void FittingTesting::DrawPlotData()
 	{
 
@@ -304,7 +317,7 @@ namespace UI::Data::JunctionFitMaster
 				contentBrowserData.readCharacteristic(path);
 		}
 	};
-	bool JunctionFitMaster::checkExistence(const std::vector<Characteristic> &destination, const std::string &item)
+	bool JunctionFitMasterUI::checkExistence(const std::vector<Characteristic> &destination, const std::string &item)
 	{
 		auto found = std::find_if(destination.begin(), destination.end(),
 								  [&item](const Characteristic &element)
@@ -400,10 +413,14 @@ namespace UI::Data::JunctionFitMaster
 		m_openGenerateData = true;
 		int id = 0;
 		ImGui::Begin("Generate Data Window");
+		static float voltages[3]{0.0f, 4.0f, 0.1}; // min - max - step
+		if (ImGui::DragFloat3("Voltages", (float *)&voltages, 0.1, 0.001, 4, "%.2f"))
+			utils::generateVectorAtGivenRanges(generatingData.Voltages, voltages[0], voltages[1], voltages[2]);
+
 		for (const auto &[description, destination, i] : std::views::zip(generatingData.names, generatingData.params, std::ranges::iota_view(0, 4)))
 			DrawSingleRangeGenerationOption(description, destination, i, id);
 		if (ImGui::Button("Single Shot"))
-			generate();
+			SingleShot();
 		if (ImGui::Button("Generate Range"))
 			GenerateRange();
 		ImGui::End();
@@ -442,7 +459,7 @@ namespace UI::Data::JunctionFitMaster
 		int counts = static_cast<int>((parameters[names::max] - parameters[names::min]) / parameters[names::step]) + 1;
 		std::vector<double> steps(counts);
 
-		std::iota(steps.begin(), steps.end(), parameters[names::min]);
+		utils::generateVectorAtGivenRanges(steps, parameters[names::min], parameters[names::max], parameters[names::step]);
 		FourParameters params;
 		for (const auto &name : std::ranges::iota_view(0, 4))
 			params[static_cast<ParametersNames>(name)] = generatingData.params[static_cast<int>(name)].value;
@@ -450,9 +467,28 @@ namespace UI::Data::JunctionFitMaster
 		std::vector<FourParameters> finalParameters(steps.size(), params);
 		for (const auto &[destination, item] : std::views::zip(finalParameters, steps))
 			destination[choosen] = item;
+
+		Characteristic referenceToCopy;
+		referenceToCopy.setAll(generatingData.Voltages);
+		std::vector<Characteristic> characteristics{counts, referenceToCopy};
+
+		for (const auto &[characteristic, parameters] : std::views::zip(characteristics, finalParameters))
+			generate(characteristic, parameters);
 	};
-	void FittingTesting::generate() {
-		///
+	void FittingTesting::SingleShot()
+	{
+		FourParameters parameters;
+		for (const auto &name : std::ranges::iota_view(0, 4))
+			parameters[static_cast<ParametersNames>(name)] = generatingData.params[static_cast<int>(name)].value;
+		Characteristic characteristic;
+		characteristic.setAll(generatingData.Voltages);
+		generate(characteristic, parameters);
+	};
+	void FittingTesting::generate(Characteristic &characteristic, const FourParameters &parameters)
+	{
+		using namespace JunctionFitMasterFromNS::IVFitting;
+		IVModel(characteristic.originalData, parameters.parameters, parameters.Temperature);
+		m_characteristics.push_back(characteristic);
 	};
 
 	void FittingTesting::Fit()

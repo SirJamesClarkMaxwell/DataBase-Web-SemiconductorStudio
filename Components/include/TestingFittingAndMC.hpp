@@ -6,8 +6,8 @@
 #include ".\linerRegression.hpp"
 #include "IVFitter.hpp"
 // #include <NumericStorm.hpp>
-
-namespace UI::Data::JunctionFitMaster
+// #include "../../NumericStorm/NumericStorm/headers/FittingSandBoxFunctions.hpp"
+namespace UI::Data::JunctionFitMasterUI
 {
 	class Characteristic;
 	using json = nlohmann::json;
@@ -22,18 +22,21 @@ namespace UI::Data::JunctionFitMaster
 		I0,
 		Rs,
 		Rp,
+		Temperature
 	};
 	struct FourParameters
 	{
 
 		FourParameters() = default;
-		std::array<double, 4> parameters;
+		typename NumericStorm::Fitting::Parameters<4> parameters;
+
 		double &operator[](const ParametersNames &name) { return parameters[static_cast<int>(name)]; };
 		// double A = 1;
 		// double I0 = std::pow(10, -19);
 		// double Rs = 10;
 		// double Rp = 1000;
 		double Temperature = 300;
+		// operator NumericStorm::Parameters<4> () { return parameters; };
 	};
 	//! Remove after including NumericStorm
 
@@ -104,6 +107,11 @@ namespace UI::Data::JunctionFitMaster
 		};
 		void updateRangedCharacteristic();
 		FourParameters parameters;
+		void setAll(std::vector<double> item)
+		{
+			for (const auto &i : std::ranges::iota_view(0, 4))
+				originalData.get(static_cast<ReturningType>(i)) = item;
+		};
 
 	private:
 		double m_temperature{-1};
@@ -172,8 +180,9 @@ namespace UI::Data::JunctionFitMaster
 
 		Params &operator[](const ParametersNames &name) { return params[static_cast<int>(name)]; };
 		ParametersNames option;
-		std::vector<std::string> names{"A   ", "I0  ", "Rs  ", "Rsh "};
+		std::vector<std::string> names{"A   ", "I0  ", "Rs  ", "Rsh ", "T"};
 		std::array<Params, 4> params;
+		std::vector<double> Voltages;
 	};
 	class FittingTesting
 	{
@@ -209,9 +218,9 @@ namespace UI::Data::JunctionFitMaster
 
 		void GenerateCharacteristic();
 		void DrawSingleRangeGenerationOption(const std::string &name, GeneratingData::Params &destination, const int &i, int &ID);
-		void generate();
+		void generate(Characteristic &characteristic, const FourParameters &parameters);
 		void GenerateRange();
-
+		void SingleShot();
 		void Fit();
 		void DoMonteCarloSimulation();
 		void PlotMonteCarloResults();

@@ -16,10 +16,10 @@
 
 #include "LambertW.h"
 
-namespace JunctionFitMaster::IVFitting
+namespace JunctionFitMasterFromNS::IVFitting
 {
 	using namespace NumericStorm::Utils;
-	using namespace JunctionFitMaster::Utils;
+	using namespace Utils;
 	using namespace NumericStorm::Fitting;
 	using namespace NumericStorm::Concepts;
 
@@ -160,6 +160,9 @@ namespace JunctionFitMaster::IVFitting
 
 	struct IVAdditionalParameters
 	{
+		IVAdditionalParameters(double t)
+			: T{t} {};
+
 		double T{0.0};
 	};
 
