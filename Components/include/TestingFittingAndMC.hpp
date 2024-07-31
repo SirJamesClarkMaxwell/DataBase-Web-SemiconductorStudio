@@ -16,6 +16,14 @@ namespace UI::Data::JunctionFitMasterUI
 
 	bool checkExistence(const std::vector<Characteristic> &destination, const std::string &item);
 
+	namespace utils
+	{
+		void generateVectorAtGivenRanges(std::vector<double> &destination, double min, double max, double step);
+		template <typename ToCast>
+		int cast(ToCast name) { return static_cast<int>(name); };
+		template <typename ToCast>
+		ToCast cast(int index) { return static_cast<ToCast>(index); };
+	};
 	enum class ParametersNames
 	{
 		A,
@@ -30,13 +38,15 @@ namespace UI::Data::JunctionFitMasterUI
 		FourParameters() = default;
 		typename NumericStorm::Fitting::Parameters<4> parameters;
 
-		double &operator[](const ParametersNames &name) { return parameters[static_cast<int>(name)]; };
-		// double A = 1;
-		// double I0 = std::pow(10, -19);
-		// double Rs = 10;
-		// double Rp = 1000;
+		double &operator[](const ParametersNames &name)
+		{
+			if (name == ParametersNames::Temperature)
+				return Temperature;
+			return parameters[utils::cast(name)];
+		};
+
 		double Temperature = 300;
-		// operator NumericStorm::Parameters<4> () { return parameters; };
+		// operator NumericStorm::Parameters<4>() { return parameters; };
 	};
 	//! Remove after including NumericStorm
 
@@ -56,13 +66,13 @@ namespace UI::Data::JunctionFitMasterUI
 			: Data(3) {}
 		JFMData(const vector &V, const vector &I, const vector &J)
 		{
-			m_data[static_cast<int>(ReturningType::Voltage)] = V;
-			m_data[static_cast<int>(ReturningType::Current)] = I;
-			m_data[static_cast<int>(ReturningType::DensityCurrent)] = J;
+			m_data[utils::cast(ReturningType::Voltage)] = V;
+			m_data[utils::cast(ReturningType::Current)] = I;
+			m_data[utils::cast(ReturningType::DensityCurrent)] = J;
 		};
 		std::vector<double> &get(const ReturningType &name)
 		{
-			return m_data[static_cast<int>(name)];
+			return m_data[utils::cast(name)];
 		};
 		std::vector<double> &getLog(const ReturningType item)
 		{
@@ -90,9 +100,10 @@ namespace UI::Data::JunctionFitMasterUI
 			: m_path(path) { readData(); };
 		JFMData originalData;
 		JFMData rangedData;
-		double getTemperature() { return m_temperature; };
+		double &getTemperature() { return parameters[ParametersNames::Temperature]; };
 		std::string name;
 		bool selected = true;
+		bool plotRanged = true;
 		ImVec4 m_color{1, 0, 0, 1};
 		operator bool() { return selected; };
 		size_t lowerIndex{0};
@@ -110,11 +121,10 @@ namespace UI::Data::JunctionFitMasterUI
 		void setAll(std::vector<double> item)
 		{
 			for (const auto &i : std::ranges::iota_view(0, 3))
-				originalData.get(static_cast<ReturningType>(i)) = item;
+				originalData.get(utils::cast<ReturningType>(i)) = item;
 		};
 
 	private:
-		double m_temperature{-1};
 		std::filesystem::path m_path;
 
 	private:
@@ -132,6 +142,7 @@ namespace UI::Data::JunctionFitMasterUI
 		bool xLog = false;
 		bool yLog = false;
 		bool fitPlotArea = true;
+
 		ImVec2 plot_size;
 		ImPlotAxisFlags axisBaseFlags = ImPlotAxisFlags_None | ImPlotAxisFlags_AutoFit;
 		ImPlotFlags plotBaseFlags = ImPlotFlags_NoLegend;
@@ -159,31 +170,37 @@ namespace UI::Data::JunctionFitMasterUI
 		std::vector<Characteristic> characteristics{};
 		void readCharacteristic(const std::filesystem::path &path);
 	};
+	enum ItemNames
+	{
+		min = 0,
+		max,
+		step
+	};
+	template <size_t parameter_size>
+	struct Params
+	{
+
+		Params() = default;
+		std::array<float, parameter_size> items;
+		float value;
+		float &operator[](const ItemNames &name) { return items[utils::cast(name)]; };
+	};
 	struct GeneratingData
 	{
 
-		enum ItemNames
-		{
-			min = 0,
-			max,
-			step
-		};
-
-		struct Params
-		{
-
-			Params() = default;
-			std::array<float, 3> items;
-			float value;
-			float &operator[](const ItemNames &name) { return items[name]; };
-		};
-
-		Params &operator[](const ParametersNames &name) { return params[static_cast<int>(name)]; };
+		Params<3> &operator[](const ParametersNames &name) { return params[utils::cast(name)]; };
 		ParametersNames option;
-		std::vector<std::string> names{"A   ", "I0  ", "Rs  ", "Rsh ", "T"};
-		std::array<Params, 5> params;
+		std::vector<std::string> names{"A   ", "I0  ", "Rs  ", "Rsh ", "T   "};
+		std::array<Params<3>, 5> params;
 		std::vector<double> Voltages;
 	};
+
+	struct SimplexSettings
+	{
+		std::vector<Params<2>> bounds{4};
+		Params<2> &operator[](const ItemNames &name) { return bounds[utils::cast(name)]; };
+	};
+
 	class FittingTesting
 	{
 	public:
@@ -192,15 +209,17 @@ namespace UI::Data::JunctionFitMasterUI
 		int characteristicIndex{-1};
 		ContentBrowserData contentBrowserData;
 		GeneratingData generatingData;
+		SimplexSettings simplexSettings;
+		std::vector<Characteristic> m_characteristics;
+
 		void DrawPlotData();
 		void DrawActionsPanel();
 		void DrawTable();
 
-		std::vector<Characteristic> m_characteristics;
-
 	private:
 		bool m_openedContentBrowserData = false;
 		bool m_openGenerateData = false;
+		bool m_showSimplexSettings = false;
 
 	private:
 		void drawLegend();
@@ -213,11 +232,14 @@ namespace UI::Data::JunctionFitMasterUI
 		void FixRsh();
 		void PreFit();
 
+		void SetSimplexSettings();
+		void SimplexSettingsUI(Params<2> &destination, const std::string &name, int ID);
+
 		void LoadCharacteristics();
 		void readAllDataFromDirectory(const std::filesystem::path &rootPath, const std::filesystem::path &currentPath);
 
 		void GenerateCharacteristic();
-		void DrawSingleRangeGenerationOption(const std::string &name, GeneratingData::Params &destination, const int &i, int &ID);
+		void DrawSingleRangeGenerationOption(const std::string &name, Params<3> &destination, const int &i, int &ID);
 		void generate(Characteristic &characteristic, const FourParameters &parameters);
 		void GenerateRange();
 		void SingleShot();

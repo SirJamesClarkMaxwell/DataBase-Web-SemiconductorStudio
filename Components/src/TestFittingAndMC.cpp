@@ -4,19 +4,17 @@
 
 namespace UI::Data::JunctionFitMasterUI
 {
-	namespace utils
+
+	void utils::generateVectorAtGivenRanges(std::vector<double> &destination, double min, double max, double step)
 	{
-		void generateVectorAtGivenRanges(std::vector<double> &destination, double min, double max, double step)
-		{
-			int size = static_cast<int>((max - min) / step) + 1;
-			destination.resize(size);
+		int size = static_cast<int>((max - min) / step) + 1;
+		destination.resize(size);
 
-			int count = -1;
-			std::ranges::generate(destination.begin(), destination.end(), [&]()
-								  { count++; return count * step; });
-		};
-
+		int count = -1;
+		std::ranges::generate(destination.begin(), destination.end(), [&]()
+							  { count++; return min + count * step; });
 	};
+
 	void FittingTesting::DrawPlotData()
 	{
 
@@ -37,12 +35,16 @@ namespace UI::Data::JunctionFitMasterUI
 				item.selected = false;
 			characteristicIndex = -1;
 		}
+		ImGui::SameLine();
 		if (ImGui::Button("SetActive Characteristic"))
 		{
 			for (auto const &[index, item] : std::views::enumerate(m_characteristics))
 				if (item)
 					characteristicIndex = index;
 		}
+		ImGui::SameLine();
+		if (ImGui::Button("Clear characteristics"))
+			m_characteristics.clear();
 
 		ImGui::Separator();
 		if (ImGui::BeginTable("Legend", 2, tableSettings.basicTableFlags))
@@ -65,6 +67,7 @@ namespace UI::Data::JunctionFitMasterUI
 	void FittingTesting::plotControls()
 	{
 		ImGui::Begin("plotControls");
+
 		ImGui::CheckboxFlags("Fit Plotting Area", (unsigned int *)&plotSettings.plotBaseFlags, ImPlotAxisFlags_AutoFit);
 		ImGui::PushItemWidth(50);
 		ImGui::SameLine();
@@ -79,6 +82,7 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::Checkbox("x log", &plotSettings.xLog);
 		ImGui::SameLine();
 		ImGui::Checkbox("y log", &plotSettings.yLog);
+
 		if (ImGui::Button("Set Range"))
 			SetRange();
 		ImGui::SameLine();
@@ -97,6 +101,7 @@ namespace UI::Data::JunctionFitMasterUI
 		{
 			Characteristic::ReturningType returningType = Characteristic::ReturningType::Voltage;
 			Characteristic &tmpCharac = m_characteristics[characteristicIndex];
+			ImGui::Checkbox("plot ranged", &tmpCharac.plotRanged);
 
 			int &lowerSlider = (int &)tmpCharac.lowerIndex;
 			int &upperSlider = (int &)tmpCharac.upperIndex;
@@ -149,7 +154,9 @@ namespace UI::Data::JunctionFitMasterUI
 	void Characteristic::updateRangedCharacteristic()
 	{
 		for (const int &item : std::ranges::iota_view(0, 3))
-			rangedData.get(static_cast<ReturningType>(item)) = std::vector<double>{originalData.get(static_cast<ReturningType>(item)).begin() + lowerIndex, originalData.get(static_cast<ReturningType>(item)).begin() + upperIndex};
+			rangedData.get(utils::cast<ReturningType>(item)) = std::vector<double>{
+				originalData.get(utils::cast<ReturningType>(item)).begin() + lowerIndex,
+				originalData.get(utils::cast<ReturningType>(item)).begin() + upperIndex};
 	};
 
 	void FittingTesting::plottingCharacteristics()
@@ -165,14 +172,11 @@ namespace UI::Data::JunctionFitMasterUI
 			{ return std::exp(v); };
 
 			ImPlot::SetupAxes("V", "I", plotSettings.plotBaseFlags, plotSettings.plotBaseFlags);
-			ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Linear);
-			ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Linear);
-#if 1
+
 			if (plotSettings.xLog)
 				ImPlot::SetupAxisScale(ImAxis_X1, transformForwardLinear, transformForwardNaturalLog);
 			if (plotSettings.yLog)
 				ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
-#endif
 			for (auto &item : m_characteristics)
 				if (item)
 					plotOneCharacteristic(item, false, false);
@@ -199,13 +203,17 @@ namespace UI::Data::JunctionFitMasterUI
 
 		std::string title = "I(V) " + item.name + " K";
 		ImPlot::SetNextLineStyle(item.m_color);
+
 		ImPlot::PlotLine(title.c_str(), V.data(), I.data(), V.size());
 
 		auto V1 = logx ? item.getLog(ReturningType::Voltage, true) : item.get(ReturningType::Voltage, true);
 		auto I1 = logy ? item.getLog(ReturningType::Current, true) : item.get(ReturningType::Current, true);
-		std::string title1 = "I(V) ranged" + item.name + " K";
-		ImPlot::SetNextLineStyle((ImVec4)ImColor(24, 249, 223, 255));
-		ImPlot::PlotLine(title1.c_str(), V1.data(), I1.data(), V1.size());
+		if (item.plotRanged)
+		{
+			std::string title1 = "I(V) ranged" + item.name + " K";
+			ImPlot::SetNextLineStyle((ImVec4)ImColor(24, 249, 223, 255));
+			ImPlot::PlotLine(title1.c_str(), V1.data(), I1.data(), V1.size());
+		}
 	};
 	void FittingTesting::DrawActionsPanel()
 	{
@@ -215,7 +223,7 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::SameLine();
 		if (ImGui::Button("Generate Data") || m_openGenerateData)
 			GenerateCharacteristic();
-		if (ImGui::Button("PreFit"))
+		if (ImGui::Button("Fit"))
 			Fit();
 
 		if (ImGui::Button("Monte Carlo Simulation"))
@@ -223,7 +231,12 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::SameLine();
 		if (ImGui::Button("Plot MonteCarlo"))
 			PlotMonteCarloResults();
+		ImGui::SameLine();
+		if (ImGui::Button("SimplexSettings") || m_showSimplexSettings)
+			SetSimplexSettings();
 		ImGui::PopItemWidth();
+
+		ImGui::Separator();
 	}
 	void FittingTesting::SetRange()
 	{
@@ -345,7 +358,7 @@ namespace UI::Data::JunctionFitMasterUI
 	void Characteristic::readData()
 	{
 		std::string pathString = m_path.string();
-		m_temperature = read_temperature(pathString);
+		parameters[ParametersNames::Temperature] = read_temperature(pathString);
 		name = m_path.filename().string();
 		json readCharacteristic;
 		try
@@ -415,19 +428,34 @@ namespace UI::Data::JunctionFitMasterUI
 		int id = 0;
 		ImGui::Begin("Generate Data Window");
 		static float voltages[3]{0.0f, 4.0f, 0.1}; // min - max - step
-		if (ImGui::DragFloat3("Voltages", (float *)&voltages, 0.1, 0.001, 4, "%.2f"))
+		ImGui::Text("Voltages");
+		ImGui::SameLine();
+		ImGui::PushID(1);
+		if (ImGui::DragFloat3("##Voltages", (float *)&voltages, 0.1, 0.00001, 4, "%.5f"))
 			utils::generateVectorAtGivenRanges(generatingData.Voltages, voltages[0], voltages[1], voltages[2]);
-
+		ImGui::PopID();
+		ImGui::PushItemWidth(200);
+		for (const char *item : {"name", "min", "max", "step", "value"})
+		{
+			ImGui::Text(item);
+			ImGui::SameLine();
+		}
+		ImGui::NewLine();
+		ImGui::PopItemWidth();
 		for (const auto &[description, destination, i] : std::views::zip(generatingData.names, generatingData.params, std::ranges::iota_view(0, 5)))
 			DrawSingleRangeGenerationOption(description, destination, i, id);
 		if (ImGui::Button("Single Shot"))
 			SingleShot();
+		ImGui::SameLine();
 		if (ImGui::Button("Generate Range"))
 			GenerateRange();
+		ImGui::SameLine();
+		if (ImGui::Button("Close"))
+			m_openGenerateData = false;
+
 		ImGui::End();
-		// std::cout << "Generate Data was pressed! " << std::endl;
 	};
-	void FittingTesting::DrawSingleRangeGenerationOption(const std::string &name, GeneratingData::Params &destination, const int &i, int &ID)
+	void FittingTesting::DrawSingleRangeGenerationOption(const std::string &name, Params<3> &destination, const int &i, int &ID)
 	{
 		std::string itemBaseName = name + std::to_string(i);
 		ImGui::PushID(itemBaseName.c_str());
@@ -440,30 +468,38 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGuiSliderFlags flags = ImGuiSliderFlags_None;
 		if (name == "I0")
 			flags | ImGuiSliderFlags_Logarithmic;
-
+		if (generatingData.option != utils::cast<ParametersNames>(i))
+			ImGui::BeginDisabled();
 		ImGui::PushID((itemBaseName + "1").c_str());
 		ImGui::DragFloat3("##DragFloat3", (float *)&destination.items, 0.1, 0.0f, 0.0f, "%.3f", flags);
 		ImGui::PopID();
+		if (generatingData.option != utils::cast<ParametersNames>(i))
+			ImGui::EndDisabled();
+
 		ImGui::SameLine();
+		if (generatingData.option == utils::cast<ParametersNames>(i))
+			ImGui::BeginDisabled();
 		ImGui::PushID((itemBaseName + "2").c_str());
 		ImGui::DragFloat("##DragFloat", &destination.value, 0.1, 0.0f, 10.0f, "%.3f");
 		ImGui::PopID();
+		if (generatingData.option == utils::cast<ParametersNames>(i))
+			ImGui::EndDisabled();
 		ImGui::PopItemWidth();
 	};
 	void FittingTesting::GenerateRange()
 	{
 
 		ParametersNames choosen = generatingData.option;
-		GeneratingData::Params parameters = generatingData[choosen];
+		Params<3> parameters = generatingData[choosen];
 
-		using names = GeneratingData::ItemNames;
+		using names = ItemNames;
 		unsigned int counts = static_cast<unsigned int>((parameters[names::max] - parameters[names::min]) / parameters[names::step]) + 1;
 		std::vector<double> steps(counts);
 
 		utils::generateVectorAtGivenRanges(steps, parameters[names::min], parameters[names::max], parameters[names::step]);
 		FourParameters params;
 		for (const auto &name : std::ranges::iota_view(0, 4))
-			params[static_cast<ParametersNames>(name)] = generatingData.params[static_cast<int>(name)].value;
+			params[utils::cast<ParametersNames>(name)] = generatingData.params[utils::cast(name)].value;
 
 		std::vector<FourParameters> finalParameters(steps.size(), params);
 		for (const auto &[destination, item] : std::views::zip(finalParameters, steps))
@@ -472,7 +508,8 @@ namespace UI::Data::JunctionFitMasterUI
 		Characteristic referenceToCopy;
 		referenceToCopy.setAll(generatingData.Voltages);
 		std::vector<Characteristic> characteristics{counts, referenceToCopy};
-
+		for (const auto &[name, item] : std::views::zip(steps, characteristics))
+			item.name = std::to_string(name);
 		for (const auto &[characteristic, parameters] : std::views::zip(characteristics, finalParameters))
 			generate(characteristic, parameters);
 	};
@@ -481,7 +518,7 @@ namespace UI::Data::JunctionFitMasterUI
 		FourParameters parameters;
 		std::vector<double> p{1, 1e-8, 1e-6, 1e7};
 		for (const auto &[name, item] : std::views::zip(std::ranges::iota_view(0, 4), p))
-			parameters[static_cast<ParametersNames>(name)] = item;
+			parameters[utils::cast<ParametersNames>(name)] = item;
 		parameters.Temperature = 210;
 		// parameters[static_cast<ParametersNames>(name)] = generatingData.params[static_cast<int>(name)].value;
 
@@ -499,15 +536,24 @@ namespace UI::Data::JunctionFitMasterUI
 
 	void FittingTesting::Fit()
 	{
+		// todo move to prepare fitting procedure
+		std::array<double, 4> min, max;
+		for (const auto &[i, item] : std::views::enumerate(simplexSettings.bounds))
+		{
+			min[i] = item.items[0];
+			max[i] = item.items[1];
+		}
+
 		using namespace JunctionFitMasterFromNS::IVFitting;
 		IVFittingSetup setUp{};
-		setUp.simplexMin = Parameters<4>({0.9, 1e-9, 0.9e-6, 0.9e7});
-		setUp.simplexMax = Parameters<4>({1.1, 1e-7, 1.1e-6, 1.1e7});
+		setUp.simplexMin = Parameters<4>(min);
+		setUp.simplexMax = Parameters<4>(max);
+
 		Fitter<IVSimplexOptimizer<IVModel>> fitter = getFitter(setUp);
 		NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
 		double T = m_characteristics[0].getTemperature();
 		auto out = fitter.fit(setUp.simplexMin, data, T);
-		for (const auto& item : out.getParameters())
+		for (const auto &item : out.getParameters())
 			std::cout << item << " " << std::endl;
 
 		std::cout << "PreFit was pressed! " << std::endl;
@@ -521,27 +567,59 @@ namespace UI::Data::JunctionFitMasterUI
 		std::cout << "Plot MonteCarlo was pressed! " << std::endl;
 	}
 
+	void FittingTesting::SetSimplexSettings()
+	{
+		ImGui::Separator();
+		m_showSimplexSettings = true;
+		int ID = 0;
+		std::vector<std::string> names{"A   ", "I0  ", "Rs  ", "Rsh "};
+		for (const auto &[destination, name, ID] : std::views::zip(simplexSettings.bounds, names, std::ranges::iota_view(0, 4)))
+			SimplexSettingsUI(destination, name, ID);
+		if (ImGui::Button("Close"))
+			m_showSimplexSettings = false;
+	};
+	void FittingTesting::SimplexSettingsUI(Params<2> &destination, const std::string &name, int ID)
+	{
+		std::string itemBaseName = name + std::to_string(ID);
+
+		ImGui::PushItemWidth(100);
+
+		ImGuiSliderFlags flags = ImGuiSliderFlags_None;
+		std::string format = "%.3f";
+		if (name == "I0")
+		{
+			flags | ImGuiSliderFlags_Logarithmic;
+			format = "%.10f";
+		}
+		// todo add custom config based on the type -> stored in some map
+		ImGui::Text(name.c_str());
+		ImGui::SameLine();
+		ImGui::PushID((itemBaseName + "1").c_str());
+		ImGui::DragFloat2("##DragFloat3", (float *)&destination.items, 0.1, 0.0f, 0.0f, format.c_str(), flags);
+		ImGui::PopID();
+		ImGui::SameLine();
+
+		ImGui::PushID((itemBaseName + "2").c_str());
+		ImGui::DragFloat("##DragFloat", &destination.value, 0.1, 0.0f, 10.0f, "%.3f");
+		ImGui::PopID();
+		ImGui::PopItemWidth();
+	};
+
 	void FittingTesting::DrawTable()
 	{
 		ImGui::SameLine();
 
 		if (ImGui::ColorEdit4("start color", (float *)&plotSettings.startColor, plotSettings.basicPlotColorFlags))
-		{
 			setColorsOfCharacteristics();
-			// setColorsOfGraph();
-		}
+
 		ImGui::SameLine();
 		if (ImGui::ColorEdit4("end color", (float *)&plotSettings.endColor, plotSettings.basicPlotColorFlags))
-		{
 			setColorsOfCharacteristics();
-			// plotData.setColorsOfGraph();
-		}
+
 		ImGui::SameLine();
 		if (ImGui::Button("Update Characteristics Color"))
-			// {
 			setColorsOfCharacteristics();
-		// plotData.setColorsOfGraph();
-		// }
+
 		ImGui::SameLine();
 		ImGui::Spacing();
 		ImGui::Spacing();
@@ -581,18 +659,10 @@ namespace UI::Data::JunctionFitMasterUI
 			ImGui::EndTable();
 		}
 	}
-	// void FittingTesting::setColorsOfGraph()
-	// {
-	//     plotProperties.colors.resize(m_characteristics.size());
-	//     std::transform(m_characteristics.begin(), m_characteristics.end(), plotProperties.colors.begin(), [&](const Characteristic &item)
-	//                    { return item.m_color; });
-	// }
 
 	void FittingTesting::setColorsOfCharacteristics()
 	{
-		// ImColor colorStep = (endColor - startColor) / (characteristics.size() - 1);
-		// for (const auto &[index, item] : std::views::enumerate(characteristics))
-		//     item.m_color = startColor + index * colorStep;
+
 		// todo extract this code to gconcrete functions
 		size_t numChars = m_characteristics.size();
 		for (size_t i = 0; i < numChars; ++i)
@@ -606,3 +676,7 @@ namespace UI::Data::JunctionFitMasterUI
 		}
 	}
 }
+
+// todo bounds set up
+// todo auto range
+// todo MC
