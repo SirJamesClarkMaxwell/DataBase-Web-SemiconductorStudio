@@ -3,9 +3,7 @@
 
 namespace JunctionFitMasterFromNS::IVFitting
 {
-
-    Fitter<IVSimplexOptimizer<IVModel>> getFitter(IVFittingSetup& config)
-    {
+    IVSimplexOptimizer<IVModel> getOptimizer(IVFittingSetup& config) {
         using Settings = IVSimplexOptimizerSettings<IVModel>;
         using Builder = typename Settings::IVSimplexOptimizerSettingsBuilder;
 
@@ -28,7 +26,14 @@ namespace JunctionFitMasterFromNS::IVFitting
 
         optimizer.setUp();
 
-        return Fitter<IVSimplexOptimizer<IVModel>>{optimizer};
+        return optimizer;
+    }
+
+    Fitter<IVSimplexOptimizer<IVModel>> getFitter(IVFittingSetup& config)
+    {
+        
+
+        return Fitter<IVSimplexOptimizer<IVModel>>{getOptimizer(config)};
     }
 
 };
