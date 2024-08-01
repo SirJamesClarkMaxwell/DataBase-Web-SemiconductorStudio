@@ -50,8 +50,9 @@ project "Components"
 
 
     filter { "configurations:Debug" }
+        defines { "DEBUG" }
         runtime "Debug"
-        staticruntime "on"
+        staticruntime "off"
     filter { "configurations:Release" }
         runtime "Release"
 

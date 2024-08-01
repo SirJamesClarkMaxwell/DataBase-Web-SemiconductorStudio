@@ -69,14 +69,15 @@ namespace JunctionFitMasterFromNS::IVFitting
 			std::array<typename SettingsT::In, parameter_size + 1> points{};
 			points.fill(input);
 			points[0].evaluatePoint();
+
 			std::for_each(points.begin() + 1, points.end(), [&](auto& point)
 				{
 					size_t index{ 0 };
 					std::for_each(point.begin(), point.end(), [&](auto& value) {
 						if (index == 1)
-							value += LogDist::value(this->m_settings.getP(), this->m_settings.getMinBounds()[index], this->m_settings.getMaxBounds()[index]);
+							value = LogDist::value(this->m_settings.getMinBounds()[index], this->m_settings.getMaxBounds()[index]);
 						else
-							value += Random::Float(this->m_settings.getMinBounds()[index], this->m_settings.getMaxBounds()[index]);
+							value = Random::Float(this->m_settings.getMinBounds()[index], this->m_settings.getMaxBounds()[index]);
 						index++;
 						});
 
@@ -127,6 +128,9 @@ namespace JunctionFitMasterFromNS::IVFitting
 	public:
 		using SettingsT = IVSimplexOptimizerSettings<M>;
 		using AdapterT = void;
+
+		IVSimplexOptimizer() : BasicSimplexOptimizer<IVSimplexOptimizerSettings<M>, void>{ IVSimplexOptimizerSettings<M>{} } {}
+
 
 		IVSimplexOptimizer(const SettingsT& settings)
 			: BasicSimplexOptimizer<IVSimplexOptimizerSettings<M>, void>{ settings } {}
@@ -181,6 +185,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 				{
 					double x = ((q * I0 * Rs) / (A * k * T)) * std::exp(V / (A * k * T));
 					double I_lw = x > -std::exp(-1) ? utl::LambertW<0>(x) : utl::LambertW<-1>(x);
+					I_lw *= (A * k * T) / Rs;
 					I = I_lw + (V - I_lw * Rs) / Rsch;
 				};
 
@@ -199,10 +204,21 @@ namespace JunctionFitMasterFromNS::IVFitting
 		IVError() : ErrorModel{ [](const Data& data, const Data& model)
 							   {
 								   double error{0.0};
+								   /*double mean = std::accumulate(data[1].begin(), data[1].end(), 0.0) / data[1].size();
+
+								   double variance = std::accumulate(data[1].begin(), data[1].end(), 0.0, [&](double acc, double val)
+									   {
+										   return acc + std::pow(val - mean, 2);
+									   });
+
+								   variance /= data[1].size();*/
+
+
 								   for (size_t i = 0; i < data[0].size(); i++)
 								   {
 									   error += std::pow(data[1][i] - model[1][i], 2);
 								   }
+								   //return error / variance;
 								   return error;
 							   } } {}
 	};
@@ -217,15 +233,16 @@ namespace JunctionFitMasterFromNS::IVFitting
 		double logP{ 0.5 };
 
 		// simplex operations coeficients
-		double reflec_coeff{ 1.2 };
-		double expand_coeff{ 1.5 };
-		double contract_coeff{ 0.6 };
+		double reflec_coeff{ 1.0 };
+		double expand_coeff{ 2.0 };
+		double contract_coeff{ 0.5 };
 		double shrink_coeff{ 0.5 };
 
-		double minError{ 0.0000001 };
+		double minError{ 0.0 };
 		long int maxIteration{ 3000 };
 	};
 
+	IVSimplexOptimizer<IVModel> getOptimizer(IVFittingSetup& config);
 	Fitter<IVSimplexOptimizer<IVModel>> getFitter(IVFittingSetup& config);
 
 };
