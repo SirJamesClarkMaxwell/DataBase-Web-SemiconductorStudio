@@ -44,7 +44,10 @@ namespace UI::Data::JunctionFitMasterUI
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Clear characteristics"))
+		{
 			m_characteristics.clear();
+			characteristicIndex = -1;
+		}
 
 		ImGui::Separator();
 		if (ImGui::BeginTable("Legend", 2, tableSettings.basicTableFlags))
@@ -103,18 +106,18 @@ namespace UI::Data::JunctionFitMasterUI
 			Characteristic &item = m_characteristics[characteristicIndex];
 			ImGui::Checkbox("plot ranged", &item.plotRanged);
 
-			int &lowerSlider = (int &)tmpCharac.lowerIndex;
-			int &upperSlider = (int &)tmpCharac.upperIndex;
+			int &lowerSlider = (int &)item.lowerIndex;
+			int &upperSlider = (int &)item.upperIndex;
 
 			int min, max, step;
 			min = 0;
-			max = tmpCharac.get(returningType, false).size() - 1;
-			step = tmpCharac.get(returningType, false)[1] - min;
+			max = item.get(returningType, false).size() - 1;
+			step = item.get(returningType, false)[1] - min;
 
-			if (ImGui::SliderInt("Down Range", &lowerSlider, 0, upperSlider, std::to_string(tmpCharac.get(returningType)[lowerSlider]).c_str()))
+			if (ImGui::SliderInt("Down Range", &lowerSlider, 0, upperSlider, std::to_string(item.get(returningType)[lowerSlider]).c_str()))
 			{
-				tmpCharac.updateRangedCharacteristic();
-				auto Voltage = Characteristic::ReturningType::Voltage;
+				item.updateRangedCharacteristic();
+				/*auto Voltage = Characteristic::ReturningType::Voltage;
 				auto Current = Characteristic::ReturningType::Current;
 				auto &originalV = m_characteristics[characteristicIndex].get(Voltage, true);
 				auto &originalI = m_characteristics[characteristicIndex].get(Current, true);
@@ -125,14 +128,14 @@ namespace UI::Data::JunctionFitMasterUI
 				fitter(I, V);
 				m_characteristics[characteristicIndex].parameters[ParametersNames::Rp] = 1 / fitter.getB();
 				std::cout << "1/ fitter.getB(): " << 1 / fitter.getB() << std::endl;
-				std::cout << "fitter.getB()  " << fitter.getB() << std::endl;
+				std::cout << "fitter.getB()  " << fitter.getB() << std::endl;*/
 			}
 			ImGui::SameLine();
-			ImGui::Text(std::to_string(tmpCharac.get(returningType)[lowerSlider]).c_str());
-			if (ImGui::SliderInt("Up Range", &upperSlider, lowerSlider, max, std::to_string(tmpCharac.get(returningType)[upperSlider]).c_str()))
+			ImGui::Text(std::to_string(item.get(returningType)[lowerSlider]).c_str());
+			if (ImGui::SliderInt("Up Range", &upperSlider, lowerSlider, max, std::to_string(item.get(returningType)[upperSlider]).c_str()))
 			{
-				tmpCharac.updateRangedCharacteristic();
-				auto Voltage = Characteristic::ReturningType::Voltage;
+				item.updateRangedCharacteristic();
+				/*auto Voltage = Characteristic::ReturningType::Voltage;
 				auto Current = Characteristic::ReturningType::Current;
 				auto &originalV = m_characteristics[characteristicIndex].get(Voltage, true);
 				auto &originalI = m_characteristics[characteristicIndex].get(Current, true);
@@ -143,10 +146,10 @@ namespace UI::Data::JunctionFitMasterUI
 				fitter(I, V);
 				m_characteristics[characteristicIndex].parameters[ParametersNames::Rp] = fitter.getB();
 				std::cout << "1/ fitter.getB(): " << 1 / fitter.getB() << std::endl;
-				std::cout << "fitter.getB()  " << fitter.getB() << std::endl;
+				std::cout << "fitter.getB()  " << fitter.getB() << std::endl;*/
 			}
 			ImGui::SameLine();
-			ImGui::Text(std::to_string(tmpCharac.get(returningType)[upperSlider]).c_str());
+			ImGui::Text(std::to_string(item.get(returningType)[upperSlider]).c_str());
 			ImGui::SameLine();
 		}
 		ImGui::End();
@@ -183,18 +186,18 @@ namespace UI::Data::JunctionFitMasterUI
 			if (characteristicIndex != -1)
 			{
 				Characteristic::ReturningType returningType = Characteristic::ReturningType::Voltage;
-				Characteristic &tmpCharac = m_characteristics[characteristicIndex];
+				Characteristic &item = m_characteristics[characteristicIndex];
 
-				int &lowerSlider = (int &)tmpCharac.lowerIndex;
-				int &upperSlider = (int &)tmpCharac.upperIndex;
+				int &lowerSlider = (int &)item.lowerIndex;
+				int &upperSlider = (int &)item.upperIndex;
 
-				ImPlot::PlotInfLines("Lower bound", &tmpCharac.get(returningType)[lowerSlider], 1);
-				ImPlot::PlotInfLines("Upper bound", &tmpCharac.get(returningType)[upperSlider - 1], 1);
+				ImPlot::PlotInfLines("Lower bound", &item.get(returningType)[lowerSlider], 1);
+				ImPlot::PlotInfLines("Upper bound", &item.get(returningType)[upperSlider - 1], 1);
 			}
 			ImPlot::EndPlot();
 		}
 		ImGui::End();
-	}
+	};
 	void FittingTesting::plotOneCharacteristic(Characteristic &item, bool logy, bool logx)
 	{
 		using ReturningType = JFMData::ReturningType;
@@ -237,7 +240,8 @@ namespace UI::Data::JunctionFitMasterUI
 			Fit();
 
 		if (ImGui::Button("Monte Carlo Simulation"))
-			DoMonteCarloSimulation();
+			monteCarloEngine.settings.draw = true;
+
 		ImGui::SameLine();
 		if (ImGui::Button("Plot MonteCarlo"))
 			PlotMonteCarloResults();
@@ -254,9 +258,9 @@ namespace UI::Data::JunctionFitMasterUI
 		if (m_openGenerateData)
 			GenerateCharacteristic();
 
+		if (monteCarloEngine.settings)
+			ShowMonteCarloSettings();
 		/*
-		if (ImGui::Button("Monte Carlo Simulation"))
-			DoMonteCarloSimulation();
 		ImGui::SameLine();
 		if (ImGui::Button("Plot MonteCarlo"))
 			PlotMonteCarloResults();
@@ -272,32 +276,60 @@ namespace UI::Data::JunctionFitMasterUI
 	}
 	void FittingTesting::FixRs()
 	{
+		//auto Voltage = Characteristic::ReturningType::Voltage;
+		//auto Current = Characteristic::ReturningType::Current;
+		//auto &originalV = m_characteristics[characteristicIndex].get(Voltage, true);
+		//auto &originalI = m_characteristics[characteristicIndex].get(Current, true);
+		//LinearRegression fitter{};
+		//std::valarray<double> V, I;
+		//V = std::valarray<double>(originalV.data(), originalV.size());
+		//I = std::valarray<double>(originalI.data(), originalI.size());
+		//fitter(I, V);
+		//m_characteristics[characteristicIndex].parameters[ParametersNames::Rs] = fitter.getB();
+		//std::cout << "Rs: (fitter.getB() ) " << m_characteristics[characteristicIndex].parameters[ParametersNames::Rs] << std::endl;
+		//std::cout << "Rs: V[0]/I[0] " << V[0] / I[0] << std::endl;
+
 		auto Voltage = Characteristic::ReturningType::Voltage;
 		auto Current = Characteristic::ReturningType::Current;
-		auto &originalV = m_characteristics[characteristicIndex].get(Voltage, true);
-		auto &originalI = m_characteristics[characteristicIndex].get(Current, true);
-		LinearRegression fitter{};
-		std::valarray<double> V, I;
-		V = std::valarray<double>(originalV.data(), originalV.size());
-		I = std::valarray<double>(originalI.data(), originalI.size());
-		fitter(I, V);
-		m_characteristics[characteristicIndex].parameters[ParametersNames::Rs] = fitter.getB();
-		std::cout << "Rs: (fitter.getB() ) " << m_characteristics[characteristicIndex].parameters[ParametersNames::Rs] << std::endl;
-		std::cout << "Rs: V[0]/I[0] " << V[0] / I[0] << std::endl;
+		std::vector<double> originalV = m_characteristics[characteristicIndex].get(Voltage, false);
+		std::vector<double> originalI = m_characteristics[characteristicIndex].get(Current, false);
+		size_t i = 5;
+		std::reverse(originalV.begin(), originalV.end());
+		std::reverse(originalI.begin(), originalI.end());
+		std::valarray<double> V{ originalV.data(),i }, I{ originalI.data() ,i };
+		/*for (const auto& [destination, source] : std::views::zip(V, originalV))
+			destination = source;
+		for (const auto& [destination, source] : std::views::zip(I, originalI))
+			destination = source;*/
+		auto Rs_s = V/I;
+		for (const auto& [Vs,Is,Rs] : std::views::zip(V,I,Rs_s))
+			std::cout << "[Vs, Is, Rs]" << Vs << " " << Is << " " << "Vs/Is" << Vs / Is << std::endl;
+		double Rs = Rs_s.sum() / Rs_s.size();
+		std::cout << " Series resistance: " << Rs << std::endl;
 	}
 	void FittingTesting::FixRsh()
 	{
 		auto Voltage = Characteristic::ReturningType::Voltage;
 		auto Current = Characteristic::ReturningType::Current;
-		auto &originalV = m_characteristics[characteristicIndex].get(Voltage, true);
-		auto &originalI = m_characteristics[characteristicIndex].get(Current, true);
-		LinearRegression fitter{};
-		std::valarray<double> V, I;
-		V = std::valarray<double>(originalV.data(), (int)originalV.size());
-		I = std::valarray<double>(originalI.data(), (int)originalI.size());
-		fitter(I, V);
-		m_characteristics[characteristicIndex].parameters[ParametersNames::Rp] = 1 / fitter.getB();
-		std::cout << "Rp: ( 1/ fitter.getAB) ) " << m_characteristics[characteristicIndex].parameters[ParametersNames::Rp] << std::endl;
+		auto &originalV = m_characteristics[characteristicIndex].get(Voltage, false);
+		auto &originalI = m_characteristics[characteristicIndex].get(Current, false);
+		std::valarray<double> V{5}, I{5};
+		for (const auto &[destination, source] : std::views::zip(V, originalV))
+			destination = source;
+		for (const auto &[destination, source] : std::views::zip(I, originalI))
+			destination = source;
+		auto Rp_s = V / I;
+		for (const auto& [i, item] : std::views::enumerate(Rp_s))
+			std::cout << i << ": " << item << std::endl;
+		double Rp = Rp_s.sum() / Rp_s.size();
+		std::cout << " Parallel resistance: " << Rp << std::endl;
+		// LinearRegression fitter{};
+		// std::valarray<double> V, I;
+		// V = std::valarray<double>(originalV.data(), (int)originalV.size());
+		// I = std::valarray<double>(originalI.data(), (int)originalI.size());
+		// fitter(I, V);
+		// m_characteristics[characteristicIndex].parameters[ParametersNames::Rp] = 1 / fitter.getB();
+		// std::cout << "Rp: ( 1/ fitter.getAB) ) " << m_characteristics[characteristicIndex].parameters[ParametersNames::Rp] << std::endl;
 	}
 	void FittingTesting::PreFit()
 	{
@@ -452,7 +484,7 @@ namespace UI::Data::JunctionFitMasterUI
 		m_openGenerateData = true;
 		int id = 0;
 		ImGui::Separator();
-		static float voltages[3]{0.0f, 4.0f, 0.1}; // min - max - step
+		static float voltages[3]{0.0f, 10.0f, 0.1}; // min - max - step
 		ImGui::Text("Voltages");
 		ImGui::SameLine();
 		ImGui::PushID(1);
@@ -542,7 +574,7 @@ namespace UI::Data::JunctionFitMasterUI
 	void FittingTesting::SingleShot()
 	{
 		FourParameters parameters;
-		std::vector<double> p{1, 1e-8, 1e-6, 1e7};
+		std::vector<double> p{1, 5e-8, 1e2, 5e6};
 		for (const auto &[name, item] : std::views::zip(std::ranges::iota_view(0, 4), p))
 			parameters[utils::cast<ParametersNames>(name)] = item;
 		parameters.Temperature = 210;
@@ -611,11 +643,11 @@ namespace UI::Data::JunctionFitMasterUI
 	{
 		std::vector<double> minRanges, maxRanges;
 
-		auto &[min, max, step] = autoRangeSettings.bounds[0].items;
-		utils::generateVectorAtGivenRanges(minRanges, min, max, step);
+		auto &[Minmin, Minmax, Minstep] = autoRangeSettings.bounds[0].items;
+		utils::generateVectorAtGivenRanges(minRanges, Minmin, Minmax, Minstep);
 
-		auto &[min, max, step] = autoRangeSettings.bounds[1].items;
-		utils::generateVectorAtGivenRanges(maxRanges, min, max, step);
+		auto &[Maxmin, Maxmax, Maxstep] = autoRangeSettings.bounds[1].items;
+		utils::generateVectorAtGivenRanges(maxRanges, Maxmin, Maxmax, Maxstep);
 
 		//? filtering characteristic to auto range
 		std::vector<Characteristic> characteristicToAutoRange;
@@ -623,13 +655,10 @@ namespace UI::Data::JunctionFitMasterUI
 			if (item)
 				characteristicToAutoRange.push_back(item);
 
-		std::for_each(std::execution::par, characteristicToAutoRange.begin(), characteristicToAutoRange.end(), [&](Characteristic &item)
+		std::for_each(std::execution::seq, characteristicToAutoRange.begin(), characteristicToAutoRange.end(), [&](Characteristic &item)
 					  {
-			// for (Characteristic &item : characteristicToAutoRange)
-			// {
-
-using namespace JunctionFitMasterFromNS::IVFitting;
-			std::vector<FittingResults> fittingResults;
+			using namespace JunctionFitMasterFromNS::IVFitting;
+			std::vector<Characteristic> fittingResults;
 			for (auto minRange : minRanges)
 			{
 				for (auto maxRange : maxRanges)
@@ -662,31 +691,87 @@ using namespace JunctionFitMasterFromNS::IVFitting;
 					Fitter<IVSimplexOptimizer<IVModel>> fitter = getFitter(setUp);
 					NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
 					double T = m_characteristics[0].getTemperature();
-					FittingResults result{item.lowerIndex, item.upperIndex, fitter.fit(setUp.simplexMin, data, T)};
-					fittingResults.push_back(result);
-					// 5. add to tmp list
-				}
+					auto result = fitter.fit(setUp.simplexMin, data, T);
+					item.parameters.parameters = result.getParameters().getParameters();
+				};
+				// 5. add to tmp list
+				fittingResults.push_back(item);
 			}
 
 			// sort list
 			std::sort(fittingResults.begin(), fittingResults.end());
 			// get best
-			item.parameters.parameters = fittingResults[0].result.getParameters().getParameters(); // NOTE i know that this is trash code
-			// todo fix this code in terms of
+
 			item.lowerIndex = fittingResults[0].lowerIndex;
 			item.upperIndex = fittingResults[0].upperIndex;
 			item.updateRangedCharacteristic(); });
 	};
 
-	void FittingTesting::DoMonteCarloSimulation()
+	void FittingTesting::DoMonteCarloSimulation() {
+
+	};
+	void MonteCarloEngine::Simulate(const std::vector<Characteristic> &characteristic) {};
+	void MonteCarloEngine::simulate(const Characteristic &item)
 	{
-		std::cout << "Monte Carlo Simulation was pressed! " << std::endl;
-	}
+		using namespace NumericStorm::Fitting;
+		using namespace JunctionFitMasterFromNS::IVFitting;
+		MonteCarloResult simulationResults;
+		simulationResults.results.resize(settings.numberOfIterations);
+		const NumericStorm::Fitting::Data originalData = item.rangedData;
+		for (int i = 0; i < settings.numberOfIterations; i++)
+		{
+		}
+	};
+	void FittingTesting::ShowMonteCarloSettings()
+	{
+		auto &settings = monteCarloEngine.settings;
+		settings.draw = true;
+		ImGui::Separator();
+		ImGui::PushItemWidth(150);
+		ImGui::InputDouble("noise factor [%]", &settings.noiseFactor, 0.01, 0.1, "%.1f");
+		ImGui::SameLine();
+		ImGui::InputInt("Number Of Iterations", &settings.numberOfIterations, 1, 100);
+		const char *names[]{
+			"A",
+			"I0",
+			"Rs",
+			"Rp",
+		};
+		static int X = 0, Y = 1;
+		ImGui::SameLine();
+		ImGui::PushItemWidth(50);
+		if (ImGui::Combo("X parameter", &X, names, IM_ARRAYSIZE(names)))
+			settings.XParameter = utils::cast<ParametersNames>(utils::cast(X));
+
+		ImGui::SameLine();
+		if (ImGui::Combo("Y parameter", &Y, names, IM_ARRAYSIZE(names), 4))
+			settings.YParameter = utils::cast<ParametersNames>(utils::cast(Y));
+		ImGui::PopItemWidth();
+
+		ImGui::ColorEdit4("best color", (float *)&settings.bestErrors, settings.colorsFlags);
+		ImGui::SameLine();
+		ImGui::ColorEdit4("worse color", (float *)&settings.worserErrors, settings.colorsFlags);
+		ImGui::SameLine();
+		ImGui::ColorEdit4("worst color", (float *)&settings.worstErrors, settings.colorsFlags);
+
+		if (ImGui::Button("Simulate"))
+			DoMonteCarloSimulation();
+		static char *path[128];
+		// if (ImGui::InputText("Path To Dump", *path, IM_ARRAYSIZE(path),128))
+		//	settings.pathToDump = std::filesystem::path(*path);
+		ImGui::SameLine();
+		if (ImGui::Button("Dump Results"))
+			DumpMonteCarloResults();
+		ImGui::SameLine();
+		if (ImGui::Button("Close"))
+			settings.draw = false;
+		ImGui::PopItemWidth();
+	};
 	void FittingTesting::PlotMonteCarloResults()
 	{
 		std::cout << "Plot MonteCarlo was pressed! " << std::endl;
-	}
-
+	};
+	void FittingTesting::DumpMonteCarloResults() {};
 	void FittingTesting::SetSimplexSettings()
 	{
 		ImGui::Separator();
@@ -795,7 +880,6 @@ using namespace JunctionFitMasterFromNS::IVFitting;
 				plotSettings.startColor.w * (1.0f - t) + plotSettings.endColor.w * t);
 		}
 	}
-
 }
 
 // todo MC

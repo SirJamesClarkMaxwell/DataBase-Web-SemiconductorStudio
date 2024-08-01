@@ -5,6 +5,7 @@
 #include "implot.h"
 #include ".\linerRegression.hpp"
 #include "IVFitter.hpp"
+#include <execution>
 // #include <NumericStorm.hpp>
 // #include "../../NumericStorm/NumericStorm/headers/FittingSandBoxFunctions.hpp"
 namespace UI::Data::JunctionFitMasterUI
@@ -104,6 +105,7 @@ namespace UI::Data::JunctionFitMasterUI
 		std::string name;
 		bool selected = true;
 		bool plotRanged = true;
+		double Error{-1};
 		ImVec4 m_color{1, 0, 0, 1};
 		operator bool() { return selected; };
 		size_t lowerIndex{0};
@@ -129,6 +131,7 @@ namespace UI::Data::JunctionFitMasterUI
 			int size = originalData.get(ReturningType::Current).size();
 			return originalData.get(ReturningType::Current)[size - 1];
 		};
+		bool operator<(const Characteristic &other) { return Error < other.Error; };
 
 	private:
 		std::filesystem::path m_path;
@@ -213,12 +216,39 @@ namespace UI::Data::JunctionFitMasterUI
 		std::vector<std::string> names{"min", "max", "step"};
 		operator bool() { return open; };
 	};
-	struct FittingResults
+	struct MonteCarloSettings
 	{
-	using namespace JunctionFitMasterFromNS::IVFitting;
-		SimplexOptimizationResults result;
-		int lowerIndex, upperIndex;
-		bool operator()(const FittingResults &lhs, const FittingResults &rhs) { return lhs.result.getError() < rhs.result.getError(); }
+		bool draw = false;
+		int numberOfIterations = 10000;
+		double noiseFactor = 1;
+		int numberOfParameters;
+		ParametersNames XParameter;
+		ParametersNames YParameter;
+		operator bool() { return draw; };
+		std::filesystem::path pathToDump;
+		ImGuiColorEditFlags colorsFlags = ImGuiColorEditFlags_DefaultOptions_ | ImGuiColorEditFlags_None | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_InputRGB;
+		ImVec4 worstErrors{255, 0, 0, 255};	   // #FF0000
+		ImVec4 worserErrors{255, 192, 0, 255}; // #FFC000
+		ImVec4 bestErrors{0, 255, 253, 255};   // #66FFFD
+
+		// #0A00FF
+		// #DE00FF
+	};
+	struct MonteCarloResult
+	{
+		Characteristic simulatedCharacteristic;
+		int Error = utils::cast(ParametersNames::Temperature);
+		std::vector<FourParameters> results;
+		std::vector<std::vector<double>> uncertainties;
+	};
+	struct MonteCarloEngine
+	{
+		std::vector<MonteCarloResult> results;
+		MonteCarloSettings settings;
+		void Simulate(const std::vector<Characteristic> &characteristics);
+
+	private:
+		void simulate(const Characteristic &item);
 	};
 	class FittingTesting
 	{
@@ -230,6 +260,7 @@ namespace UI::Data::JunctionFitMasterUI
 		GeneratingData generatingData;
 		SimplexSettings simplexSettings;
 		AutoRangeSettings autoRangeSettings;
+		MonteCarloEngine monteCarloEngine;
 		std::vector<Characteristic> m_characteristics;
 
 		void DrawPlotData();
@@ -264,11 +295,14 @@ namespace UI::Data::JunctionFitMasterUI
 		void GenerateRange();
 		void SingleShot();
 		void Fit();
+
+		void ShowMonteCarloSettings();
 		void DoMonteCarloSimulation();
+		void AddNoise();
+		void DumpMonteCarloResults();
 		void PlotMonteCarloResults();
 
 		void PlotData();
-		void AddNoise();
 
 		void DoAutoRange();
 		void AutoRange();
