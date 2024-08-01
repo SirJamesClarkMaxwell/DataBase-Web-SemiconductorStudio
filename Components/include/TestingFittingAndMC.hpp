@@ -123,6 +123,12 @@ namespace UI::Data::JunctionFitMasterUI
 			for (const auto &i : std::ranges::iota_view(0, 3))
 				originalData.get(utils::cast<ReturningType>(i)) = item;
 		};
+		double getMin() { return originalData.get(ReturningType::Current)[0]; };
+		double getMax()
+		{
+			int size = originalData.get(ReturningType::Current).size();
+			return originalData.get(ReturningType::Current)[size - 1];
+		};
 
 	private:
 		std::filesystem::path m_path;
@@ -200,7 +206,20 @@ namespace UI::Data::JunctionFitMasterUI
 		std::vector<Params<2>> bounds{4};
 		Params<2> &operator[](const ItemNames &name) { return bounds[utils::cast(name)]; };
 	};
-
+	struct AutoRangeSettings
+	{
+		bool open = false;
+		std::array<Params<3>, 2> bounds;
+		std::vector<std::string> names{"min", "max", "step"};
+		operator bool() { return open; };
+	};
+	struct FittingResults
+	{
+	using namespace JunctionFitMasterFromNS::IVFitting;
+		SimplexOptimizationResults result;
+		int lowerIndex, upperIndex;
+		bool operator()(const FittingResults &lhs, const FittingResults &rhs) { return lhs.result.getError() < rhs.result.getError(); }
+	};
 	class FittingTesting
 	{
 	public:
@@ -210,6 +229,7 @@ namespace UI::Data::JunctionFitMasterUI
 		ContentBrowserData contentBrowserData;
 		GeneratingData generatingData;
 		SimplexSettings simplexSettings;
+		AutoRangeSettings autoRangeSettings;
 		std::vector<Characteristic> m_characteristics;
 
 		void DrawPlotData();
@@ -249,7 +269,9 @@ namespace UI::Data::JunctionFitMasterUI
 
 		void PlotData();
 		void AddNoise();
+
 		void DoAutoRange();
+		void AutoRange();
 	};
 
 }

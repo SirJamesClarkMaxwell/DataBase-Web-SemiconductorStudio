@@ -100,8 +100,8 @@ namespace UI::Data::JunctionFitMasterUI
 		if (characteristicIndex != -1)
 		{
 			Characteristic::ReturningType returningType = Characteristic::ReturningType::Voltage;
-			Characteristic &tmpCharac = m_characteristics[characteristicIndex];
-			ImGui::Checkbox("plot ranged", &tmpCharac.plotRanged);
+			Characteristic &item = m_characteristics[characteristicIndex];
+			ImGui::Checkbox("plot ranged", &item.plotRanged);
 
 			int &lowerSlider = (int &)tmpCharac.lowerIndex;
 			int &upperSlider = (int &)tmpCharac.upperIndex;
@@ -218,11 +218,21 @@ namespace UI::Data::JunctionFitMasterUI
 	void FittingTesting::DrawActionsPanel()
 	{
 		ImGui::PushItemWidth(200);
-		if (ImGui::Button("Load Data") || m_openedContentBrowserData)
-			LoadCharacteristics();
+		if (ImGui::Button("Load Data"))
+			m_openedContentBrowserData = true;
+
 		ImGui::SameLine();
-		if (ImGui::Button("Generate Data") || m_openGenerateData)
-			GenerateCharacteristic();
+		if (ImGui::Button("Generate Data"))
+			m_openGenerateData = true;
+
+		if (ImGui::Button("Settings Auto Range"))
+			autoRangeSettings.open = true;
+
+		ImGui::SameLine();
+		if (ImGui::Button("Simplex Settings"))
+			m_showSimplexSettings = true;
+
+		ImGui::SameLine();
 		if (ImGui::Button("Fit"))
 			Fit();
 
@@ -231,10 +241,29 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::SameLine();
 		if (ImGui::Button("Plot MonteCarlo"))
 			PlotMonteCarloResults();
-		ImGui::SameLine();
-		if (ImGui::Button("SimplexSettings") || m_showSimplexSettings)
-			SetSimplexSettings();
 		ImGui::PopItemWidth();
+
+		if (m_showSimplexSettings)
+			m_showSimplexSettings = true;
+		if (m_openedContentBrowserData)
+			LoadCharacteristics();
+
+		//
+		if (autoRangeSettings)
+			AutoRange();
+		if (m_openGenerateData)
+			GenerateCharacteristic();
+
+		/*
+		if (ImGui::Button("Monte Carlo Simulation"))
+			DoMonteCarloSimulation();
+		ImGui::SameLine();
+		if (ImGui::Button("Plot MonteCarlo"))
+			PlotMonteCarloResults();
+		ImGui::SameLine();
+		*/
+		if (m_showSimplexSettings)
+			SetSimplexSettings();
 
 		ImGui::Separator();
 	}
@@ -383,13 +412,10 @@ namespace UI::Data::JunctionFitMasterUI
 
 	void Characteristic::to_json(json &j, Characteristic characteristic)
 	{
-
 		j = json{{"voltage", characteristic.get(ReturningType::Voltage)}, {"current", characteristic.originalData.get(ReturningType::Current)}, {"density current", characteristic.get(ReturningType::DensityCurrent)}};
 	};
-
 	void Characteristic::from_json(const json &j, Characteristic &iv)
 	{
-
 		auto strToDouble = [](const std::string &str)
 		{ return std::stod(str); };
 		auto transform = [&](const std::vector<std::string> &str, std::vector<double> &vec)
@@ -402,7 +428,6 @@ namespace UI::Data::JunctionFitMasterUI
 		transform(j.at("current"), iv.get(ReturningType::Current));
 		transform(j.at("density current"), iv.get(ReturningType::DensityCurrent));
 	};
-
 	double Characteristic::read_temperature(std::string &path)
 	{
 
@@ -426,7 +451,7 @@ namespace UI::Data::JunctionFitMasterUI
 	{
 		m_openGenerateData = true;
 		int id = 0;
-		ImGui::Begin("Generate Data Window");
+		ImGui::Separator();
 		static float voltages[3]{0.0f, 4.0f, 0.1}; // min - max - step
 		ImGui::Text("Voltages");
 		ImGui::SameLine();
@@ -444,16 +469,17 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::PopItemWidth();
 		for (const auto &[description, destination, i] : std::views::zip(generatingData.names, generatingData.params, std::ranges::iota_view(0, 5)))
 			DrawSingleRangeGenerationOption(description, destination, i, id);
+
 		if (ImGui::Button("Single Shot"))
 			SingleShot();
+
 		ImGui::SameLine();
 		if (ImGui::Button("Generate Range"))
 			GenerateRange();
+
 		ImGui::SameLine();
 		if (ImGui::Button("Close"))
 			m_openGenerateData = false;
-
-		ImGui::End();
 	};
 	void FittingTesting::DrawSingleRangeGenerationOption(const std::string &name, Params<3> &destination, const int &i, int &ID)
 	{
@@ -555,9 +581,103 @@ namespace UI::Data::JunctionFitMasterUI
 		auto out = fitter.fit(setUp.simplexMin, data, T);
 		for (const auto &item : out.getParameters())
 			std::cout << item << " " << std::endl;
-
-		std::cout << "PreFit was pressed! " << std::endl;
 	}
+	void FittingTesting::AutoRange()
+	{
+		ImGui::Separator();
+		autoRangeSettings.open = true;
+
+		ImGui::PushItemWidth(250);
+
+		for (const auto &[destination, name, ID] : std::views::zip(autoRangeSettings.bounds, autoRangeSettings.names, std::ranges::iota_view(0, 2)))
+		{
+			std::string itemBaseName = name + std::to_string(ID);
+			ImGui::Text(name.c_str());
+			ImGui::SameLine();
+			ImGui::PushID((itemBaseName + "1").c_str());
+			ImGui::DragFloat3("##DragFloat3", (float *)&destination.items, 0.1, 0.0f, 0.0f, "%.3f");
+			ImGui::PopID();
+		}
+		ImGui::PopItemWidth();
+
+		// todo add threads here
+		if (ImGui::Button("Auto Range"))
+			DoAutoRange();
+
+		if (ImGui::Button("Close"))
+			autoRangeSettings.open = false;
+	};
+	void FittingTesting::DoAutoRange()
+	{
+		std::vector<double> minRanges, maxRanges;
+
+		auto &[min, max, step] = autoRangeSettings.bounds[0].items;
+		utils::generateVectorAtGivenRanges(minRanges, min, max, step);
+
+		auto &[min, max, step] = autoRangeSettings.bounds[1].items;
+		utils::generateVectorAtGivenRanges(maxRanges, min, max, step);
+
+		//? filtering characteristic to auto range
+		std::vector<Characteristic> characteristicToAutoRange;
+		for (auto &item : m_characteristics)
+			if (item)
+				characteristicToAutoRange.push_back(item);
+
+		std::for_each(std::execution::par, characteristicToAutoRange.begin(), characteristicToAutoRange.end(), [&](Characteristic &item)
+					  {
+			// for (Characteristic &item : characteristicToAutoRange)
+			// {
+
+using namespace JunctionFitMasterFromNS::IVFitting;
+			std::vector<FittingResults> fittingResults;
+			for (auto minRange : minRanges)
+			{
+				for (auto maxRange : maxRanges)
+				{
+					// todo move this to a single function
+					Characteristic item = characteristicToAutoRange[0]; //! replace by characteristic in for loop
+					double minI = item.getMin() + minRange;
+					double maxI = item.getMax() + maxRange;
+
+					// 2. find nearest point -> get index
+					// 3. range characteristic
+					std::vector<double> I = item.get(Characteristic::ReturningType::Current);
+					item.lowerIndex = std::distance(I.begin(), std::lower_bound(I.begin(), I.end(), minI));
+					item.upperIndex = std::distance(I.begin(), std::lower_bound(I.begin(), I.end(), maxI));
+					item.updateRangedCharacteristic();
+
+					// 4. fit
+					// todo -> this can be extracted to another function which will take settings and characteristic!
+					std::array<double, 4> min, max;
+					for (const auto &[i, item] : std::views::enumerate(simplexSettings.bounds))
+					{
+						min[i] = item.items[0];
+						max[i] = item.items[1];
+					}
+
+					IVFittingSetup setUp{};
+					setUp.simplexMin = Parameters<4>(min);
+					setUp.simplexMax = Parameters<4>(max);
+
+					Fitter<IVSimplexOptimizer<IVModel>> fitter = getFitter(setUp);
+					NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
+					double T = m_characteristics[0].getTemperature();
+					FittingResults result{item.lowerIndex, item.upperIndex, fitter.fit(setUp.simplexMin, data, T)};
+					fittingResults.push_back(result);
+					// 5. add to tmp list
+				}
+			}
+
+			// sort list
+			std::sort(fittingResults.begin(), fittingResults.end());
+			// get best
+			item.parameters.parameters = fittingResults[0].result.getParameters().getParameters(); // NOTE i know that this is trash code
+			// todo fix this code in terms of
+			item.lowerIndex = fittingResults[0].lowerIndex;
+			item.upperIndex = fittingResults[0].upperIndex;
+			item.updateRangedCharacteristic(); });
+	};
+
 	void FittingTesting::DoMonteCarloSimulation()
 	{
 		std::cout << "Monte Carlo Simulation was pressed! " << std::endl;
@@ -675,8 +795,7 @@ namespace UI::Data::JunctionFitMasterUI
 				plotSettings.startColor.w * (1.0f - t) + plotSettings.endColor.w * t);
 		}
 	}
+
 }
 
-// todo bounds set up
-// todo auto range
 // todo MC
