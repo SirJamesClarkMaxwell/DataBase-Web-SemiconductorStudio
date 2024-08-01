@@ -30,22 +30,22 @@ namespace UI::Components
 
 	void draw_tester(std::shared_ptr<Data::MyData> state)
 	{
+		/*
 		drawContentBrowserData(state->dataPreview);
 		drawPlots(state->dataPreview);
 		drawGeneratingCurvesPanel(state->generatingCharacteristicsData);
+		*/
 		TestFittingAndMC(state->fittingTestingData);
 		/*
 		ImGui::Begin("Advanced Table");
 		Demo_LinePlots();
-		*/
-		/*
 		drawAdvancedTable();
 		ImGui::Text("Hello World");
 		ImGui::End();
 		ShowSelectableTable();
-		*/
 		ImPlot::ShowDemoWindow();
 		ImGui::ShowDemoWindow();
+		*/
 	}
 	bool operator==(const Characteristic &lhs, const Characteristic &rhs) { return lhs.getTemperature() == rhs.getTemperature(); };
 	void drawPlots(Data::DataPreview &dataPreview)
