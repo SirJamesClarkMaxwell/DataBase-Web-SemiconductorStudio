@@ -192,6 +192,7 @@ namespace UI::Data::JunctionFitMasterUI
 		int characteristicIndex{-1};
 		ContentBrowserData contentBrowserData;
 		GeneratingData generatingData;
+		
 		void DrawPlotData();
 		void DrawActionsPanel();
 		void DrawTable();
@@ -222,6 +223,7 @@ namespace UI::Data::JunctionFitMasterUI
 		void GenerateRange();
 		void SingleShot();
 		void Fit();
+		void Step(auto& optimizer, auto& state);
 		void DoMonteCarloSimulation();
 		void PlotMonteCarloResults();
 

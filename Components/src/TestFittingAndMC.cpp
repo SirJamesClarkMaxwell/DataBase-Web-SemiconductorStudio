@@ -137,8 +137,18 @@ namespace UI::Data::JunctionFitMasterUI
 				I = std::valarray<double>(originalI.data(), (int)originalI.size());
 				fitter(I, V);
 				m_characteristics[characteristicIndex].parameters[ParametersNames::Rp] = fitter.getB();
-				std::cout << "1/ fitter.getB(): " << 1 / fitter.getB() << std::endl;
-				std::cout << "fitter.getB()  " << fitter.getB() << std::endl;
+
+
+				originalV = m_characteristics[characteristicIndex].get(Voltage);
+				originalI = m_characteristics[characteristicIndex].get(Current);
+				int i{ upperSlider };
+				V = std::valarray<double>(originalV.data(), (int)i);
+				I = std::valarray<double>(originalI.data(), (int)i);
+
+				fitter(I, V);
+
+				std::cout << "B: " << fitter.getB() << std::endl;
+
 			}
 			ImGui::SameLine();
 			ImGui::Text(std::to_string(tmpCharac.get(returningType)[upperSlider]).c_str());
@@ -217,7 +227,8 @@ namespace UI::Data::JunctionFitMasterUI
 			GenerateCharacteristic();
 		if (ImGui::Button("PreFit"))
 			Fit();
-
+		
+			
 		if (ImGui::Button("Monte Carlo Simulation"))
 			DoMonteCarloSimulation();
 		ImGui::SameLine();
@@ -479,7 +490,7 @@ namespace UI::Data::JunctionFitMasterUI
 	void FittingTesting::SingleShot()
 	{
 		FourParameters parameters;
-		std::vector<double> p{1, 1e-8, 1e-6, 1e7};
+		std::vector<double> p{1, 5e-8, 5e-6, 1e5};
 		for (const auto &[name, item] : std::views::zip(std::ranges::iota_view(0, 4), p))
 			parameters[static_cast<ParametersNames>(name)] = item;
 		parameters.Temperature = 210;
@@ -499,19 +510,61 @@ namespace UI::Data::JunctionFitMasterUI
 
 	void FittingTesting::Fit()
 	{
-		using namespace JunctionFitMasterFromNS::IVFitting;
-		IVFittingSetup setUp{};
-		setUp.simplexMin = Parameters<4>({0.9, 1e-9, 0.9e-6, 0.9e7});
-		setUp.simplexMax = Parameters<4>({1.1, 1e-7, 1.1e-6, 1.1e7});
-		Fitter<IVSimplexOptimizer<IVModel>> fitter = getFitter(setUp);
-		NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
-		double T = m_characteristics[0].getTemperature();
-		auto out = fitter.fit(setUp.simplexMin, data, T);
-		for (const auto& item : out.getParameters())
-			std::cout << item << " " << std::endl;
+		LinearRegression fitter{};
+
+		auto Voltage = Characteristic::ReturningType::Voltage;
+		auto Current = Characteristic::ReturningType::Current;
+		auto &originalV = m_characteristics[0].get(Voltage);
+		auto &originalI = m_characteristics[0].get(Current);
+
+
+		
+
+		size_t i{ 2 };
+		double B = 0.0;
+		for(;i< originalV.size(); i++)
+		{
+			std::valarray<double> V, I;
+			V = std::valarray<double>(originalV.data(), (int)i);
+			I = std::valarray<double>(originalI.data(), (int)i);
+
+			fitter(I, V);
+
+			std::cout << "B: " << fitter.getB() << " " << B << std::endl;
+			
+			if (i > 2 && B / fitter.getB() >= 2) {
+				std::cout << "Trigger B: " << fitter.getB() << " " << B << " " << i << std::endl;
+
+				int index = i / 2;
+
+				V = std::valarray<double>(originalV.data(), (int)index);
+				I = std::valarray<double>(originalI.data(), (int)index);
+
+				fitter(I, V);
+
+				std::cout << "B: " << fitter.getB() << " " << index << " " << i << std::endl;
+
+				break;
+			}
+			if (i > 2) {
+				B *= i - 1;
+				B += fitter.getB();
+				B /= i;
+			}
+		}
+
+
+		
 
 		std::cout << "PreFit was pressed! " << std::endl;
 	}
+
+	void FittingTesting::Step(auto& optimizer, auto& state)
+	{
+
+	}
+
+
 	void FittingTesting::DoMonteCarloSimulation()
 	{
 		std::cout << "Monte Carlo Simulation was pressed! " << std::endl;

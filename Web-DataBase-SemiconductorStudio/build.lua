@@ -54,8 +54,9 @@ project "Web-DataBase-SemiconductorStudio"
         libdirs { "%{wks.location}/Vendor/libs/glfw/lib-vc2010-64" }
 
     filter { "configurations:Debug" }
+        defines { "DEBUG" }
         runtime "Debug"
-        staticruntime "on"
+        staticruntime "off"
     filter { "configurations:Release" }
         runtime "Release"
 
