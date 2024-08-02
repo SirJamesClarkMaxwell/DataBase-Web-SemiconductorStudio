@@ -49,6 +49,19 @@ namespace UI::Data::JunctionFitMasterUI
 			m_characteristics.clear();
 			characteristicIndex = -1;
 		}
+		if (ImGui::Button("Remove Selected"))
+		{
+			std::vector<Characteristic> tmp;
+			for (auto &item : m_characteristics)
+				if (!item)
+					tmp.push_back(item);
+
+			characteristicIndex = -1;
+			m_characteristics.clear();
+
+			for (auto &item : tmp)
+				m_characteristics.push_back(item);
+		}
 
 		ImGui::Separator();
 		if (ImGui::BeginTable("Legend", 2, tableSettings.basicTableFlags))
@@ -98,7 +111,9 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::SameLine();
 		if (ImGui::Button("PreFit"))
 			PreFit();
-
+		ImGui::SameLine();
+		if (ImGui::Button("Print Results"))
+			PrintResults();
 		float min{0.001}, max{5}, step{0.01};
 
 		if (characteristicIndex != -1)
@@ -253,7 +268,7 @@ namespace UI::Data::JunctionFitMasterUI
 			Fit();
 
 		ImGui::Begin("plotting the error");
-		if (ImPlot::BeginPlot("plotting the error", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }))
+		if (ImPlot::BeginPlot("plotting the error", {ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y}))
 		{
 			auto transformForwardLinear = [](double v, void *)
 			{ return std::log(std::abs(v)); };
@@ -364,10 +379,77 @@ namespace UI::Data::JunctionFitMasterUI
 		// m_characteristics[characteristicIndex].parameters[ParametersNames::Rp] = 1 / fitter.getB();
 		// std::cout << "Rp: ( 1/ fitter.getAB) ) " << m_characteristics[characteristicIndex].parameters[ParametersNames::Rp] << std::endl;
 	}
-	void FittingTesting::PreFit()
+	void FittingTesting::PreFit() {
+		for (const auto& [setUp, init, characteristic] : std::views::zip(prefit.setUps, prefit.initialPoints, prefit.fittingCharacteristics)) {
+			prefit.futureResults.push_back(std::async(std::launch::async, PreFit::runOneFit, &prefit.results, &setUp, &init, &characteristic));
+		}
+	};
+	void FittingTesting::PrintResults() 
 	{
-	}
+		for(const auto& [checking,item] : std::views::zip(prefit.futureResults,prefit.results))
+		{
+			if (checking.valid())
+			{
+				if (checking.wait_for(std::chrono::milliseconds(5)) == std::future_status::ready)
+				{
+					std::vector<std::string> names {"A","I0","Rs", "Rp"};
+					for (const auto& [name, item] : std::views::zip(names, item.getParameters()))
+						std::cout << name << " " << std::scientific << std::setprecision(2) << item << " ";
+				}
+			}
+			std::cout << std::endl;
 
+		}
+	};
+	void PreFit::Init()
+	{
+		using namespace NumericStorm::Fitting;
+		using namespace JunctionFitMasterFromNS::IVFitting;
+
+		// Generating data
+		utils::generateVectorAtGivenRanges(V, 0.01, 3, 0.001);
+		utils::generateVectorAtGivenRanges(I, 0.01, 3, 0.001);
+
+		Parameters<4> testParameters({ 1, 5e-8, 5e-6, 5e5 });
+		NumericStorm::Fitting::Data data(2);
+		data[0] = V;
+		data[1] = I;
+
+		Characteristic fittingCharacteristic;
+		fittingCharacteristic.get(Characteristic::ReturningType::Voltage) = V;
+		fittingCharacteristic.get(Characteristic::ReturningType::Current) = I;
+		fittingCharacteristics.assign(18, fittingCharacteristic);
+
+		IVModel()(data, testParameters, 210);
+
+		Parameters<4> minBound({ 0.5, 1e-20, 1e-5, 10 });
+		Parameters<4> maxBound({ 20, 1e-3, 100, 1e9 });
+		std::vector<double> I0s;
+		utils::generateVectorAtGivenRanges(I0s, -20, -2, 1);
+
+		std::vector<Parameters<4>> minBounds(18, minBound);
+		std::vector<Parameters<4>> maxBounds(18, maxBound);
+
+		for (const auto& [min, item] : std::views::zip(minBounds, I0s)) {
+			IVFittingSetup setUp;
+			setUp.maxIteration = numberOfIterations;
+			setUp.simplexMin = Parameters<4>({ 0.5, 1 * std::pow(10, item), 1e-5, 10 });
+			setUp.simplexMax = Parameters<4>({ 0.5, 9 * std::pow(10, item), 1e-5, 10 });
+			setUps.emplace_back(setUp);
+			initialPoints.emplace_back(Parameters<4>({ 0.5, 5 * std::pow(10, item), 1e-5, 10 }));
+		}
+	};
+
+
+	void PreFit::runOneFit(std::vector<NumericStorm::Fitting::Parameters<4>> *results,
+						   JunctionFitMasterFromNS::IVFitting::IVFittingSetup *setUp,
+						   NumericStorm::Fitting::Parameters<4> *initalParams, Characteristic *item)
+	{
+		auto fitter =  JunctionFitMasterFromNS::IVFitting::getFitter(*setUp);
+		auto out = fitter.fit(*initalParams, item->originalData, 210);
+		std::lock_guard<std::mutex> lock(Mutex);
+		results->push_back(out.getParameters());
+	};
 	void FittingTesting::LoadCharacteristics()
 	{
 
@@ -691,39 +773,50 @@ namespace UI::Data::JunctionFitMasterUI
 		setUp.simplexMax = Parameters<4>(max);
 
 		Fitter<IVSimplexOptimizer<IVModel>> fitter = getFitter(setUp);
-		NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
-		double T = m_characteristics[0].getTemperature();
-		int j = 1;
-		for (int i = 0; i < 5; i++)
+		std::vector<Characteristic> fittedCharacteristics;
+		for (auto &item : m_characteristics)
 		{
-			// auto out = fitter.fit(initialPoint, data, T);
-
-			auto m_optimizer = getOptimizer(setUp);
-			auto state = m_optimizer.setUpOptimization(initialPoint, data, T);
-
-			while (!m_optimizer.checkStop(state))
+			if (!item)
+				continue;
+			NumericStorm::Fitting::Data data = item.originalData;
+			double T = item.getTemperature();
+			int j = 1;
+			for (int i = 0; i < 10; i++)
 			{
-				m_optimizer.oneStep(state);
-				numbIteration.push_back(j++);
-				
-				errors.push_back(state.getBestPoint().getError());
-			}
-			 for (const auto &[dest, src] : std::views::zip(initialPoint.getParameters(), state.getBestPoint().getParameters()))
-				dest = src;
-		}
-		for (const auto &item : initialPoint.getParameters())
-			std::cout << item << " " << std::endl;
+				auto out = fitter.fit(initialPoint, data, T);
+				/*
+								auto m_optimizer = getOptimizer(setUp);
+								auto state = m_optimizer.setUpOptimization(initialPoint, data, T);
 
-		Characteristic toAdd;
-		toAdd.setAll(m_characteristics[0].rangedData[0]);
-		toAdd.parameters.parameters = initialPoint.getParameters();
-		toAdd.getTemperature() = m_characteristics[0].getTemperature();
-		JunctionFitMasterFromNS::IVFitting::IVModel()(toAdd.originalData, toAdd.parameters.parameters, toAdd.getTemperature());
-		std::string name;
-		for (const auto &item : initialPoint.getParameters())
-			name += std::to_string(item) + "  ";
-		toAdd.name = name;
-		m_characteristics.push_back(toAdd);
+								while (!m_optimizer.checkStop(state))
+								{
+									m_optimizer.oneStep(state);
+									numbIteration.push_back(j++);
+
+									errors.push_back(state.getBestPoint().getError());
+								}
+								for (const auto &[dest, src] : std::views::zip(initialPoint.getParameters(), state.getBestPoint().getParameters()))
+									dest = src;
+				*/
+				for (const auto &[dest, src] : std::views::zip(initialPoint.getParameters(), out.getParameters()))
+					dest = src;
+			}
+			for (const auto &item : initialPoint.getParameters())
+				std::cout << item << " " << std::endl;
+
+			Characteristic toAdd;
+			toAdd.setAll(item.rangedData[0]);
+			toAdd.parameters.parameters = initialPoint.getParameters();
+			toAdd.getTemperature() = item.getTemperature();
+			JunctionFitMasterFromNS::IVFitting::IVModel()(toAdd.originalData, toAdd.parameters.parameters, toAdd.getTemperature());
+			std::string name;
+			for (const auto &item : initialPoint.getParameters())
+				name += std::to_string(item) + "  ";
+			toAdd.name = name;
+			fittedCharacteristics.push_back(toAdd);
+		}
+		for (auto &item : fittedCharacteristics)
+			m_characteristics.push_back(item);
 	};
 	void FittingTesting::AutoRange()
 	{

@@ -24,3 +24,10 @@
 #include <stdlib.h>
 #include <random>
 #include <execution>
+#include <future>
+#include <sstream>
+#include <iomanip>
+
+#include <mutex>
+
+#include <cmath>

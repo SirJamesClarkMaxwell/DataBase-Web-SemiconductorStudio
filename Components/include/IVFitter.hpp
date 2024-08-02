@@ -59,21 +59,20 @@ namespace JunctionFitMasterFromNS::IVFitting
 
 		LogSimplexCreator() = default;
 
-		LogSimplexCreator(const SettingsT& settings)
-			: VisitorOperationBase<SettingsT>{ settings } {}
+		LogSimplexCreator(const SettingsT &settings)
+			: VisitorOperationBase<SettingsT>{settings} {}
 
 		virtual ~LogSimplexCreator() = default;
 
-		typename SettingsT::Out operator()(const typename SettingsT::In& input)
+		typename SettingsT::Out operator()(const typename SettingsT::In &input)
 		{
 			std::array<typename SettingsT::In, parameter_size + 1> points{};
 			points.fill(input);
 			points[0].evaluatePoint();
 
-			std::for_each(points.begin() + 1, points.end(), [&](auto& point)
-				{
-					std::for_each(points.begin() + 1, points.end(), [&](auto& point)
-						{
+			std::for_each(points.begin() + 1, points.end(), [&](auto &point)
+						  { std::for_each(points.begin() + 1, points.end(), [&](auto &point)
+										  {
 							size_t index{ 0 };
 							std::for_each(point.begin(), point.end(), [&](auto& value)
 								{
@@ -83,16 +82,12 @@ namespace JunctionFitMasterFromNS::IVFitting
 										value = Random::Float(this->m_settings.getMinBounds()[index], this->m_settings.getMaxBounds()[index]);
 									index++;
 								});
-							point.evaluatePoint(); 
-						});
-				});
-				
+							point.evaluatePoint(); }); });
 
-		typename SettingsT::Out figure{ points };
-		return figure;
+			typename SettingsT::Out figure{points};
+			return figure;
 		};
-			
-		};
+	};
 
 	template <Model M>
 	class IVSimplexOptimizerSettings : public BasicSimplexOptimizerSettings<M>
@@ -135,12 +130,10 @@ namespace JunctionFitMasterFromNS::IVFitting
 		using SettingsT = IVSimplexOptimizerSettings<M>;
 		using AdapterT = void;
 
-		IVSimplexOptimizer() : BasicSimplexOptimizer<IVSimplexOptimizerSettings<M>, void>{ IVSimplexOptimizerSettings<M>{} } {}
+		IVSimplexOptimizer() : BasicSimplexOptimizer<IVSimplexOptimizerSettings<M>, void>{IVSimplexOptimizerSettings<M>{}} {}
 
-
-		IVSimplexOptimizer(const SettingsT& settings)
-			: BasicSimplexOptimizer<IVSimplexOptimizerSettings<M>, void>{ settings } {}
-
+		IVSimplexOptimizer(const SettingsT &settings)
+			: BasicSimplexOptimizer<IVSimplexOptimizerSettings<M>, void>{settings} {}
 
 		virtual ~IVSimplexOptimizer() = default;
 
@@ -181,7 +174,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 	{
 	public:
 		IVModel() : ModelBase<4, IVAdditionalParameters>(current) {};
-		static void current(Data &data, const Parameters<4> &parameters, const IVAdditionalParameters&aParameters)
+		static void current(Data &data, const Parameters<4> &parameters, const IVAdditionalParameters &aParameters)
 		{
 			auto [A, I0, Rs, Rch] = parameters.getParameters();
 
@@ -194,8 +187,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 				double I_lw = x > -std::exp(-1) ? utl::LambertW<0>(x) : utl::LambertW<-1>(x);
 				I_lw *= (A * k * T) / Rs;
 				I = I_lw + (V - I_lw * Rs) / Rsch;
-			}; 
-
+			};
 
 			for (const auto &[V, I] : std::views::zip(data[0], data[1]))
 			{
@@ -210,23 +202,22 @@ namespace JunctionFitMasterFromNS::IVFitting
 		IVError() : ErrorModel{[](const Data &data, const Data &model)
 							   {
 								   double error{0.0};
-								   /*double mean = std::accumulate(data[1].begin(), data[1].end(), 0.0) / data[1].size();
+								   double mean = std::accumulate(data[1].begin(), data[1].end(), 0.0) / data[1].size();
 
 								   double variance = std::accumulate(data[1].begin(), data[1].end(), 0.0, [&](double acc, double val)
-									   {
-										   return acc + std::pow(val - mean, 2);
-									   });
+																	 { return acc + std::pow(val - mean, 2); });
 
-								   variance /= data[1].size();*/
-
+								   variance /= data[1].size();
 
 								   for (size_t i = 0; i < data[0].size(); i++)
 								   {
-									   error += std::pow(data[1][i] - model[1][i], 2);
+									   error += std::pow(std::log(data[1][i]) - std::log(model[1][i]), 2);
 								   }
-								   //return error / variance;
-								   return error;
-							   }} {}
+								   return error / variance;
+								   //    return error;
+							   }}
+		{
+		}
 	};
 
 	struct IVFittingSetup
@@ -240,19 +231,15 @@ namespace JunctionFitMasterFromNS::IVFitting
 
 		// simplex operations coeficients
 
-		double reflec_coeff{ 1.0 };
-		double expand_coeff{ 2.0 };
-		double contract_coeff{ 0.5 };
-		double shrink_coeff{ 0.5 };
+		double reflec_coeff{1.0};
+		double expand_coeff{2.0};
+		double contract_coeff{0.5};
+		double shrink_coeff{0.5};
 
-		double minError{ 0.0 };
-		long int maxIteration{ 3000 };
+		double minError{1e-10};
+		long int maxIteration{3000};
 	};
 
-	IVSimplexOptimizer<IVModel> getOptimizer(IVFittingSetup& config);
-	Fitter<IVSimplexOptimizer<IVModel>> getFitter(IVFittingSetup& config);
-	};
-
-
-
-
+	IVSimplexOptimizer<IVModel> getOptimizer(IVFittingSetup &config);
+	Fitter<IVSimplexOptimizer<IVModel>> getFitter(IVFittingSetup &config);
+};

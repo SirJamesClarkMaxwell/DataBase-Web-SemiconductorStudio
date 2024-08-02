@@ -6,6 +6,7 @@
 #include ".\linerRegression.hpp"
 #include "IVFitter.hpp"
 #include <execution>
+#include <future>
 // #include <NumericStorm.hpp>
 // #include "../../NumericStorm/NumericStorm/headers/FittingSandBoxFunctions.hpp"
 namespace UI::Data::JunctionFitMasterUI
@@ -250,6 +251,24 @@ namespace UI::Data::JunctionFitMasterUI
 	private:
 		void simulate(const Characteristic &item);
 	};
+	struct PreFit {
+		PreFit() { Init(); }
+
+		std::vector<Characteristic> fittingCharacteristics;
+		std::vector<double> V, I;
+		std::vector<JunctionFitMasterFromNS::IVFitting::IVFittingSetup> setUps;
+		std::vector<NumericStorm::Fitting::Parameters<4>> initialPoints;
+		std::vector<NumericStorm::Fitting::Parameters<4>> results;
+		std::vector<std::future<void>> futureResults;
+		int numberOfIterations = 500;
+
+		static void runOneFit(std::vector<NumericStorm::Fitting::Parameters<4>>* results,
+			JunctionFitMasterFromNS::IVFitting::IVFittingSetup* setUp,
+			NumericStorm::Fitting::Parameters<4>* initialParams, Characteristic* item);
+		void Init();
+
+	};
+	static	std::mutex Mutex;
 	class FittingTesting
 	{
 	public:
@@ -262,7 +281,7 @@ namespace UI::Data::JunctionFitMasterUI
 		AutoRangeSettings autoRangeSettings;
 		MonteCarloEngine monteCarloEngine;
 		std::vector<Characteristic> m_characteristics;
-
+		PreFit prefit;
 		void DrawPlotData();
 		void DrawActionsPanel();
 		void DrawTable();
@@ -295,11 +314,10 @@ namespace UI::Data::JunctionFitMasterUI
 		void GenerateRange();
 		void SingleShot();
 		void Fit();
-
-
+		void PrintResults();
 		void ShowMonteCarloSettings();
 
-		void Step(auto& optimizer, auto& state);
+		void Step(auto &optimizer, auto &state);
 
 		void DoMonteCarloSimulation();
 		void AddNoise();
