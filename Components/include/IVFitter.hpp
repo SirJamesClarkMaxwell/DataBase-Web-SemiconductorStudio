@@ -29,15 +29,15 @@ namespace JunctionFitMasterFromNS::IVFitting
 	public:
 		LogCreatorSettings() = default;
 
-		LogCreatorSettings(const Parameters<parameter_size>& min, const Parameters<parameter_size>& max)
+		LogCreatorSettings(const Parameters<parameter_size> &min, const Parameters<parameter_size> &max)
 			: SimplexCreatorSettings<parameter_size>(min, max) {};
 
-		auto& getP()
+		auto &getP()
 		{
 			return m_p;
 		}
 
-		const auto& getP() const
+		const auto &getP() const
 		{
 			return m_p;
 		}
@@ -48,7 +48,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 		}
 
 	private:
-		double m_p{ 0.5 };
+		double m_p{0.5};
 	};
 
 	template <size_t parameter_size>
@@ -72,21 +72,27 @@ namespace JunctionFitMasterFromNS::IVFitting
 
 			std::for_each(points.begin() + 1, points.end(), [&](auto& point)
 				{
-					size_t index{ 0 };
-					std::for_each(point.begin(), point.end(), [&](auto& value) {
-						if (index == 1)
-							value = LogDist::value(this->m_settings.getMinBounds()[index], this->m_settings.getMaxBounds()[index]);
-						else
-							value = Random::Float(this->m_settings.getMinBounds()[index], this->m_settings.getMaxBounds()[index]);
-						index++;
+					std::for_each(points.begin() + 1, points.end(), [&](auto& point)
+						{
+							size_t index{ 0 };
+							std::for_each(point.begin(), point.end(), [&](auto& value)
+								{
+									if (index == 1)
+										value = LogDist::value(this->m_settings.getMinBounds()[index], this->m_settings.getMaxBounds()[index]);
+									else
+										value = Random::Float(this->m_settings.getMinBounds()[index], this->m_settings.getMaxBounds()[index]);
+									index++;
+								});
+							point.evaluatePoint(); 
 						});
+				});
+				
 
-					point.evaluatePoint(); });
-
-			typename SettingsT::Out figure{ points };
-			return figure;
-		}
-	};
+		typename SettingsT::Out figure{ points };
+		return figure;
+		};
+			
+		};
 
 	template <Model M>
 	class IVSimplexOptimizerSettings : public BasicSimplexOptimizerSettings<M>
@@ -94,7 +100,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 	public:
 		IVSimplexOptimizerSettings() = default;
 
-		auto& getLogCreatorSettings()
+		auto &getLogCreatorSettings()
 		{
 			return m_logCreatorSettings;
 		}
@@ -107,7 +113,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 		class IVSimplexOptimizerSettingsBuilderBase : public BasicSimplexOptimizerSettings<M>::BasicSimplexOptimizerSettingsBuilderBase<BuildingType, Settings>
 		{
 		public:
-			BuildingType& addLogCreatorSettings(const LogCreatorSettings<M::parameter_size>& settings)
+			BuildingType &addLogCreatorSettings(const LogCreatorSettings<M::parameter_size> &settings)
 			{
 				this->m_settingsObject.m_logCreatorSettings = settings;
 				return this->returnSelf();
@@ -135,6 +141,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 		IVSimplexOptimizer(const SettingsT& settings)
 			: BasicSimplexOptimizer<IVSimplexOptimizerSettings<M>, void>{ settings } {}
 
+
 		virtual ~IVSimplexOptimizer() = default;
 
 		void setUp()
@@ -143,17 +150,17 @@ namespace JunctionFitMasterFromNS::IVFitting
 			m_logSimplexCreator.updateSettings(this->m_settings.getLogCreatorSettings());
 		};
 
-		typename SettingsT::OptimizerStateT setUpOptimization(const typename SettingsT::OptimizerInputT& input, const Data& data, const typename SettingsT::AuxilaryParametersT& additionalParameters)
+		typename SettingsT::OptimizerStateT setUpOptimization(const typename SettingsT::OptimizerInputT &input, const Data &data, const typename SettingsT::AuxilaryParametersT &additionalParameters)
 		{
-			SimplexPoint<M::parameter_size> inputPoint{ input };
+			SimplexPoint<M::parameter_size> inputPoint{input};
 			inputPoint.getData() = data;
-			inputPoint.onEvaluate([&](SimplexPoint<M::parameter_size>& point)
-				{
+			inputPoint.onEvaluate([&](SimplexPoint<M::parameter_size> &point)
+								  {
 					this->m_settings.getModel()(point.getData(), point.getParameters(), additionalParameters);
 					point.setError(this->m_settings.getErrorModel()(point.getData(), data)); });
 
 			auto pointCount = SimplexStrategySettings<M::parameter_size>::indecies::Count;
-			typename SettingsT::OptimizerStateT state{ m_logSimplexCreator(inputPoint), pointCount };
+			typename SettingsT::OptimizerStateT state{m_logSimplexCreator(inputPoint), pointCount};
 
 			return state;
 		};
@@ -165,43 +172,42 @@ namespace JunctionFitMasterFromNS::IVFitting
 	struct IVAdditionalParameters
 	{
 		IVAdditionalParameters(double t)
-			: T{ t } {};
+			: T{t} {};
 
-		double T{ 0.0 };
+		double T{0.0};
 	};
 
 	class IVModel : public ModelBase<4, IVAdditionalParameters>
 	{
 	public:
 		IVModel() : ModelBase<4, IVAdditionalParameters>(current) {};
-		static void current(Data& data, const Parameters<4>& parameters, const AuxParameters& aParameters)
+		static void current(Data &data, const Parameters<4> &parameters, const IVAdditionalParameters&aParameters)
 		{
 			auto [A, I0, Rs, Rch] = parameters.getParameters();
 
 			const double k = 8.6e-5;
 			const double q = 1.60217662e-19;
 
-			auto func = [&](double& V, double& I, double& I0, double& A, double& Rsch, double& Rs, double T)
-				{
-					double x = ((q * I0 * Rs) / (A * k * T)) * std::exp(V / (A * k * T));
-					double I_lw = x > -std::exp(-1) ? utl::LambertW<0>(x) : utl::LambertW<-1>(x);
-					I_lw *= (A * k * T) / Rs;
-					I = I_lw + (V - I_lw * Rs) / Rsch;
-				};
+			auto func = [&](double &V, double &I, double &I0, double &A, double &Rsch, double &Rs, double T)
+			{
+				double x = ((q * I0 * Rs) / (A * k * T)) * std::exp(V / (A * k * T));
+				double I_lw = x > -std::exp(-1) ? utl::LambertW<0>(x) : utl::LambertW<-1>(x);
+				I_lw *= (A * k * T) / Rs;
+				I = I_lw + (V - I_lw * Rs) / Rsch;
+			}; 
 
-			for (const auto& [V, I] : std::views::zip(data[0], data[1])) {
+
+			for (const auto &[V, I] : std::views::zip(data[0], data[1]))
+			{
 				func(V, I, I0, A, Rch, Rs, aParameters.T);
 			};
 		};
-
-
-
 	};
 
 	class IVError : public ErrorModel
 	{
 	public:
-		IVError() : ErrorModel{ [](const Data& data, const Data& model)
+		IVError() : ErrorModel{[](const Data &data, const Data &model)
 							   {
 								   double error{0.0};
 								   /*double mean = std::accumulate(data[1].begin(), data[1].end(), 0.0) / data[1].size();
@@ -220,7 +226,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 								   }
 								   //return error / variance;
 								   return error;
-							   } } {}
+							   }} {}
 	};
 
 	struct IVFittingSetup
@@ -230,9 +236,10 @@ namespace JunctionFitMasterFromNS::IVFitting
 		Parameters<4> simplexMax{};
 
 		// the parameter of the logarithmic distribution for the simplex creator
-		double logP{ 0.5 };
+		double logP{0.5};
 
 		// simplex operations coeficients
+
 		double reflec_coeff{ 1.0 };
 		double expand_coeff{ 2.0 };
 		double contract_coeff{ 0.5 };
@@ -244,5 +251,8 @@ namespace JunctionFitMasterFromNS::IVFitting
 
 	IVSimplexOptimizer<IVModel> getOptimizer(IVFittingSetup& config);
 	Fitter<IVSimplexOptimizer<IVModel>> getFitter(IVFittingSetup& config);
+	};
 
-};
+
+
+

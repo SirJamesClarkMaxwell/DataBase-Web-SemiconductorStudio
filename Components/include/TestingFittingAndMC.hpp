@@ -295,12 +295,12 @@ namespace UI::Data::JunctionFitMasterUI
 		void GenerateRange();
 		void SingleShot();
 		void Fit();
-<<<<<<< HEAD
+
 
 		void ShowMonteCarloSettings();
-=======
+
 		void Step(auto& optimizer, auto& state);
->>>>>>> 8bb1ea0f1b221328076e6f2396a3f0f0984b9d1c
+
 		void DoMonteCarloSimulation();
 		void AddNoise();
 		void DumpMonteCarloResults();
