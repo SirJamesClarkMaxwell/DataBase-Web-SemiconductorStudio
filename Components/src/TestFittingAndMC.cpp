@@ -1,7 +1,8 @@
 #pragma once
 #include "pch.hpp"
 #include "TestingFittingAndMC.hpp"
-
+static std::vector<double> numbIteration;
+static std::vector<double> errors;
 namespace UI::Data::JunctionFitMasterUI
 {
 
@@ -246,9 +247,30 @@ namespace UI::Data::JunctionFitMasterUI
 		if (ImGui::Button("Simplex Settings"))
 			m_showSimplexSettings = true;
 
-		ImGui::SameLine();
+		// ImGui::SameLine();
+
 		if (ImGui::Button("Fit"))
 			Fit();
+
+		ImGui::Begin("plotting the error");
+		if (ImPlot::BeginPlot("plotting the error", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }))
+		{
+			auto transformForwardLinear = [](double v, void *)
+			{ return std::log(std::abs(v)); };
+			auto transformForwardNaturalLog = [](double v, void *)
+			{ return std::exp(v); };
+
+			ImPlot::SetupAxes("n", "E", plotSettings.plotBaseFlags, plotSettings.plotBaseFlags);
+
+			if (plotSettings.xLog)
+				ImPlot::SetupAxisScale(ImAxis_X1, transformForwardLinear, transformForwardNaturalLog);
+			if (plotSettings.yLog)
+				ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
+
+			ImPlot::PlotLine("error", (double *)numbIteration.data(), errors.data(), numbIteration.size());
+			ImPlot::EndPlot();
+		}
+		ImGui::End();
 
 		if (ImGui::Button("Monte Carlo Simulation"))
 			monteCarloEngine.settings.draw = true;
@@ -607,6 +629,7 @@ namespace UI::Data::JunctionFitMasterUI
 
 	void FittingTesting::Fit()
 	{
+
 		// LinearRegression fitter{};
 
 		auto Voltage = Characteristic::ReturningType::Voltage;
@@ -660,20 +683,32 @@ namespace UI::Data::JunctionFitMasterUI
 
 		using namespace NumericStorm::Fitting;
 		Parameters<4> initialPoint;
-		for (const auto& [i, item] : std::views::enumerate(simplexSettings.bounds))
+		for (const auto &[i, item] : std::views::enumerate(simplexSettings.bounds))
 			initialPoint[i] = item.value;
-		// usign namespace JunctionFitMasterFromNS::IVFitting;
-		JunctionFitMasterFromNS::IVFitting::IVFittingSetup setUp;
+		using namespace JunctionFitMasterFromNS::IVFitting;
+		IVFittingSetup setUp;
 		setUp.simplexMin = Parameters<4>(min);
 		setUp.simplexMax = Parameters<4>(max);
 
-		Fitter<JunctionFitMasterFromNS::IVFitting::IVSimplexOptimizer<JunctionFitMasterFromNS::IVFitting::IVModel>> fitter = getFitter(setUp);
+		Fitter<IVSimplexOptimizer<IVModel>> fitter = getFitter(setUp);
 		NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
 		double T = m_characteristics[0].getTemperature();
-		for(int i =0;i<5;i++)
+		int j = 1;
+		for (int i = 0; i < 5; i++)
 		{
-			auto out = fitter.fit(initialPoint, data, T);
-			for (const auto& [dest,src]:std::views::zip(initialPoint.getParameters() ,out.getParameters()))
+			// auto out = fitter.fit(initialPoint, data, T);
+
+			auto m_optimizer = getOptimizer(setUp);
+			auto state = m_optimizer.setUpOptimization(initialPoint, data, T);
+
+			while (!m_optimizer.checkStop(state))
+			{
+				m_optimizer.oneStep(state);
+				numbIteration.push_back(j++);
+				
+				errors.push_back(state.getBestPoint().getError());
+			}
+			 for (const auto &[dest, src] : std::views::zip(initialPoint.getParameters(), state.getBestPoint().getParameters()))
 				dest = src;
 		}
 		for (const auto &item : initialPoint.getParameters())
@@ -685,8 +720,8 @@ namespace UI::Data::JunctionFitMasterUI
 		toAdd.getTemperature() = m_characteristics[0].getTemperature();
 		JunctionFitMasterFromNS::IVFitting::IVModel()(toAdd.originalData, toAdd.parameters.parameters, toAdd.getTemperature());
 		std::string name;
-		for (const auto& item : initialPoint.getParameters())
-			name += std::to_string(item);
+		for (const auto &item : initialPoint.getParameters())
+			name += std::to_string(item) + "  ";
 		toAdd.name = name;
 		m_characteristics.push_back(toAdd);
 	};
