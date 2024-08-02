@@ -72,7 +72,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 
 			std::for_each(points.begin() + 1, points.end(), [&](auto& point)
 				{
-					std::for_each(points.begin() + 1, points.end(), [&](auto& point)
+					std::for_each(points.begin(), points.end(), [&](auto& point)
 						{
 							size_t index{ 0 };
 							std::for_each(point.begin(), point.end(), [&](auto& value)
@@ -185,13 +185,20 @@ namespace JunctionFitMasterFromNS::IVFitting
 		{
 			auto [A, I0, Rs, Rch] = parameters.getParameters();
 
-			const double k = 8.6e-5;
+			A = std::abs(A);
+			I0 = std::abs(I0);
+			Rs = std::abs(Rs);
+			Rch = std::abs(Rch);
+
+
+			const double k = 8.6e-5; // k = k_B / q
 			const double q = 1.60217662e-19;
 
 			auto func = [&](double &V, double &I, double &I0, double &A, double &Rsch, double &Rs, double T)
 			{
-				double x = ((q * I0 * Rs) / (A * k * T)) * std::exp(V / (A * k * T));
-				double I_lw = x > -std::exp(-1) ? utl::LambertW<0>(x) : utl::LambertW<-1>(x);
+				double x = ((I0 * Rs) / (A * k * T)) * std::exp(V / (A * k *  T));
+				//double I_lw = x > -std::exp(-1) ? utl::LambertW<0>(x) : utl::LambertW<-1>(x);
+				double I_lw = utl::LambertW<0>(x);
 				I_lw *= (A * k * T) / Rs;
 				I = I_lw + (V - I_lw * Rs) / Rsch;
 			}; 
@@ -222,7 +229,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 
 								   for (size_t i = 0; i < data[0].size(); i++)
 								   {
-									   error += std::pow(data[1][i] - model[1][i], 2);
+									   error += std::pow(std::log(data[1][i]) - std::log(model[1][i]), 2);
 								   }
 								   //return error / variance;
 								   return error;

@@ -1,10 +1,48 @@
 #pragma once
 #include "pch.hpp"
 #include "TestingFittingAndMC.hpp"
-static std::vector<double> numbIteration;
-static std::vector<double> errors;
+
+
 namespace UI::Data::JunctionFitMasterUI
 {
+	static std::vector<double> numbIteration;
+	static std::vector<std::vector<double>> errors;
+
+	static std::vector<std::vector<double>> parameters;
+	static std::vector<NumericStorm::Fitting::Data> timeline;
+
+
+	using namespace NumericStorm::Fitting;
+
+	struct TestingData {
+
+		struct trueData {
+			double A = 1.5067;
+			double I0 = 6.418e10;
+			double Rs = 7.7;
+			double Rsh = 6963;
+			double T = 330;
+			Parameters<4> parameters{ {A, I0, Rs, Rsh} };
+		} true_data{};
+
+		/*struct trueData {
+			double A = 1.5067;
+			double I0 = 6.418e-7;
+			double Rs = 7.7;
+			double Rsh = 6963;
+			double T = 330;
+			Parameters<4> parameters{ {A, I0, Rs, Rsh} };
+		} true_data{};*/
+
+
+		struct simplexInit {
+			Parameters<4> minBounds{ {0.5, 1e-9, 1, 1e4} };
+			Parameters<4> maxBounds{ { 2.0, 1e-7, 10, 9e4} };
+			Parameters<4> initialGuess{ { 1.5746, 1.6e-8, 6.77, 7000} };
+		} simplex_init{};
+
+	} init_data{};
+
 
 	void utils::generateVectorAtGivenRanges(std::vector<double> &destination, double min, double max, double step)
 	{
@@ -252,25 +290,93 @@ namespace UI::Data::JunctionFitMasterUI
 		if (ImGui::Button("Fit"))
 			Fit();
 
-		ImGui::Begin("plotting the error");
-		if (ImPlot::BeginPlot("plotting the error", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }))
 		{
-			auto transformForwardLinear = [](double v, void *)
-			{ return std::log(std::abs(v)); };
-			auto transformForwardNaturalLog = [](double v, void *)
-			{ return std::exp(v); };
+			ImGui::Begin("Iteration vs error for each point");
+			if (ImPlot::BeginPlot("error progression", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }))
+			{
+				auto transformForwardLinear = [](double v, void*)
+					{ return std::log(std::abs(v)); };
+				auto transformForwardNaturalLog = [](double v, void*)
+					{ return std::exp(v); };
 
-			ImPlot::SetupAxes("n", "E", plotSettings.plotBaseFlags, plotSettings.plotBaseFlags);
+				ImPlot::SetupAxes("n", "E", plotSettings.plotBaseFlags, plotSettings.plotBaseFlags);
 
-			if (plotSettings.xLog)
-				ImPlot::SetupAxisScale(ImAxis_X1, transformForwardLinear, transformForwardNaturalLog);
-			if (plotSettings.yLog)
-				ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
+				if (plotSettings.xLog)
+					ImPlot::SetupAxisScale(ImAxis_X1, transformForwardLinear, transformForwardNaturalLog);
+				if (plotSettings.yLog)
+					ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
 
-			ImPlot::PlotLine("error", (double *)numbIteration.data(), errors.data(), numbIteration.size());
-			ImPlot::EndPlot();
+				for (const auto& e : errors)
+					ImPlot::PlotLine("error", (double*)numbIteration.data(), e.data(), numbIteration.size());
+
+				ImPlot::EndPlot();
+			}
+			ImGui::End();
 		}
-		ImGui::End();
+
+		{
+			ImGui::Begin("Iteration vs Parameters of the best Point");
+			if (ImPlot::BeginPlot("parameters progression", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }))
+			{
+				auto transformForwardLinear = [](double v, void*)
+					{ return std::log(std::abs(v)); };
+				auto transformForwardNaturalLog = [](double v, void*)
+					{ return std::exp(v); };
+
+				ImPlot::SetupAxes("n", "Parameter");
+
+				if (plotSettings.xLog)
+					ImPlot::SetupAxisScale(ImAxis_X1, transformForwardLinear, transformForwardNaturalLog);
+				if (plotSettings.yLog)
+					ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
+
+				std::array<std::string, 4> names{"A", "I0", "Rs", "Rsh"};
+
+				auto it = names.begin();
+
+				for (const auto& p : parameters)
+					ImPlot::PlotLine((*it++).c_str(), (double*)numbIteration.data(), p.data(), numbIteration.size());
+
+				ImPlot::EndPlot();
+			}
+			ImGui::End();
+		}
+
+
+		{
+			ImGui::Begin("Timeline of the fitted characterictic");
+			static int time = 0;
+			if (ImPlot::BeginPlot("Characteristic", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }))
+			{
+				auto transformForwardLinear = [](double v, void*)
+					{ return std::log(std::abs(v)); };
+				auto transformForwardNaturalLog = [](double v, void*)
+					{ return std::exp(v); };
+
+				ImPlot::SetupAxes("V", "I", plotSettings.plotBaseFlags, plotSettings.plotBaseFlags);
+
+				if (plotSettings.xLog)
+					ImPlot::SetupAxisScale(ImAxis_X1, transformForwardLinear, transformForwardNaturalLog);
+				if (plotSettings.yLog)
+					ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
+
+				
+				if (timeline.size() > 0) {
+					auto& d = timeline[time];
+					ImPlot::PlotLine("Characteristic", d[0].data(), d[1].data(), d[0].size());
+				}
+				
+
+				ImPlot::EndPlot();
+			}
+
+
+			ImGui::SliderInt("Iteration", &time, 0, timeline.size() - 1);
+
+			ImGui::End();
+		}
+
+
 
 		if (ImGui::Button("Monte Carlo Simulation"))
 			monteCarloEngine.settings.draw = true;
@@ -613,7 +719,9 @@ namespace UI::Data::JunctionFitMasterUI
 			// parameters[utils::cast<ParametersNames>(name)] = item;
 			parameters[static_cast<ParametersNames>(name)] = generatingData.params[utils::cast(name)].value;
 		}
-		parameters.Temperature = 210;
+		parameters.Temperature = init_data.true_data.T;
+
+		parameters.parameters = init_data.true_data.parameters;
 
 		Characteristic characteristic;
 		characteristic.parameters = parameters;
@@ -673,8 +781,13 @@ namespace UI::Data::JunctionFitMasterUI
 		}
 		*/
 
+		using namespace JunctionFitMasterFromNS::IVFitting;
+		IVFittingSetup setUp;
+		Parameters<4> initialPoint = init_data.simplex_init.initialGuess;
+		NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
+
 		//	// todo move to prepare fitting procedure
-		std::array<double, 4> min, max;
+		/*std::array<double, 4> min, max;
 		for (const auto &[i, item] : std::views::enumerate(simplexSettings.bounds))
 		{
 			min[i] = item.items[0];
@@ -682,21 +795,34 @@ namespace UI::Data::JunctionFitMasterUI
 		}
 
 		using namespace NumericStorm::Fitting;
-		Parameters<4> initialPoint;
+		
 		for (const auto &[i, item] : std::views::enumerate(simplexSettings.bounds))
 			initialPoint[i] = item.value;
-		using namespace JunctionFitMasterFromNS::IVFitting;
-		IVFittingSetup setUp;
+		
+		
 		setUp.simplexMin = Parameters<4>(min);
 		setUp.simplexMax = Parameters<4>(max);
 
 		Fitter<IVSimplexOptimizer<IVModel>> fitter = getFitter(setUp);
-		NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
+		
+		*/
 		double T = m_characteristics[0].getTemperature();
-		int j = 1;
-		for (int i = 0; i < 5; i++)
+
+		numbIteration.clear();
+		numbIteration.resize(1);
+		errors.clear();
+		errors.resize(1);
+
+		parameters.clear();
+		parameters.resize(4);
+
+		timeline.clear();
+
+		for (int i = 0; i < 1; i++)
 		{
 			// auto out = fitter.fit(initialPoint, data, T);
+			setUp.simplexMin = init_data.simplex_init.minBounds;
+			setUp.simplexMax = init_data.simplex_init.maxBounds;
 
 			auto m_optimizer = getOptimizer(setUp);
 			auto state = m_optimizer.setUpOptimization(initialPoint, data, T);
@@ -704,10 +830,18 @@ namespace UI::Data::JunctionFitMasterUI
 			while (!m_optimizer.checkStop(state))
 			{
 				m_optimizer.oneStep(state);
-				numbIteration.push_back(j++);
+				if(i == 0)
+					numbIteration.push_back(state.getIteration());
 				
-				errors.push_back(state.getBestPoint().getError());
+				errors[i].push_back(state.getBestPoint().getError());
+
+				for (const auto& [index, p] : std::views::enumerate(state.getBestPoint().getParameters())) {
+					parameters[index].push_back(p);
+				}
+				
+				timeline.push_back(state.getBestPoint().getData());
 			}
+
 			 for (const auto &[dest, src] : std::views::zip(initialPoint.getParameters(), state.getBestPoint().getParameters()))
 				dest = src;
 		}
@@ -725,6 +859,9 @@ namespace UI::Data::JunctionFitMasterUI
 		toAdd.name = name;
 		m_characteristics.push_back(toAdd);
 	};
+
+
+
 	void FittingTesting::AutoRange()
 	{
 		ImGui::Separator();

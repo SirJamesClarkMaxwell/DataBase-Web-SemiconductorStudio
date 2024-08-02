@@ -312,4 +312,11 @@ namespace UI::Data::JunctionFitMasterUI
 		void AutoRange();
 	};
 
+	
+
+	
+
+	//iteration vs plotting each parameter of the best point
+	//timeline of the characteristic
+	//errors of every point
 }
