@@ -251,24 +251,58 @@ namespace UI::Data::JunctionFitMasterUI
 	private:
 		void simulate(const Characteristic &item);
 	};
-	struct PreFit {
+	enum class ParametersID;
+	struct PreFitResult
+	{
+		PreFitResult() = default;
+
+		Characteristic originalCharacteristic;
+		NumericStorm::Fitting::Parameters<4> initialParameters;
+		int numberOfIterations;
+		std::vector<int> iterations;
+		std::vector<Characteristic> characteristicsOverIterations;
+		std::vector<NumericStorm::Fitting::Parameters<4>> parametersOverIterations;
+		std::vector<double> errorOverIteration;
+		std::unordered_map<ParametersID, std::function<void>()> specialFunctions;
+	};
+	struct PreFit
+	{
 		PreFit() { Init(); }
 
 		std::vector<Characteristic> fittingCharacteristics;
 		std::vector<double> V, I;
 		std::vector<JunctionFitMasterFromNS::IVFitting::IVFittingSetup> setUps;
 		std::vector<NumericStorm::Fitting::Parameters<4>> initialPoints;
-		std::vector<NumericStorm::Fitting::Parameters<4>> results;
+		std::vector<PreFitResult> results;
 		std::vector<std::future<void>> futureResults;
-		int numberOfIterations = 500;
+		int numberOfIterations = 1500;
 
-		static void runOneFit(std::vector<NumericStorm::Fitting::Parameters<4>>* results,
-			JunctionFitMasterFromNS::IVFitting::IVFittingSetup* setUp,
-			NumericStorm::Fitting::Parameters<4>* initialParams, Characteristic* item);
+		static void runOneFit(std::vector<PreFitResult> *results,
+							  JunctionFitMasterFromNS::IVFitting::IVFittingSetup *setUp,
+							  NumericStorm::Fitting::Parameters<4> *initialParams, Characteristic *item);
 		void Init();
-
 	};
-	static	std::mutex Mutex;
+
+	enum class ParametersID
+	{
+		A = 0,
+		I0,
+		Rs,
+		Rp,
+		Error,
+		Characteristic
+	};
+	struct CharacteristicInspector
+	{
+		ImVec2 plot_size;
+		bool xLog = false, yLog = false;
+		int iterationCount = 1;
+		ImPlotAxisFlags axisBaseFlags = ImPlotAxisFlags_None | ImPlotAxisFlags_AutoFit;
+		ImPlotFlags plotBaseFlags = ImPlotFlags_NoLegend;
+		void showOverTime(ParametersID ID, const PreFitResult &toInspect);
+	};
+
+	static std::mutex Mutex;
 	class FittingTesting
 	{
 	public:
@@ -328,6 +362,8 @@ namespace UI::Data::JunctionFitMasterUI
 
 		void DoAutoRange();
 		void AutoRange();
+
+		void CharacteristicInspector();
 	};
 
 }

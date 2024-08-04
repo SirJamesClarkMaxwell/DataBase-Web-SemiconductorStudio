@@ -184,7 +184,8 @@ namespace JunctionFitMasterFromNS::IVFitting
 			auto func = [&](double &V, double &I, double &I0, double &A, double &Rsch, double &Rs, double T)
 			{
 				double x = ((q * I0 * Rs) / (A * k * T)) * std::exp(V / (A * k * T));
-				double I_lw = x > -std::exp(-1) ? utl::LambertW<0>(x) : utl::LambertW<-1>(x);
+				//double I_lw = x > -std::exp(-1) ? utl::LambertW<0>(x) : utl::LambertW<-1>(x);
+				double I_lw = utl::LambertW<0>(x) ;
 				I_lw *= (A * k * T) / Rs;
 				I = I_lw + (V - I_lw * Rs) / Rsch;
 			};
@@ -202,19 +203,19 @@ namespace JunctionFitMasterFromNS::IVFitting
 		IVError() : ErrorModel{[](const Data &data, const Data &model)
 							   {
 								   double error{0.0};
-								   double mean = std::accumulate(data[1].begin(), data[1].end(), 0.0) / data[1].size();
+								   //double mean = std::accumulate(data[1].begin(), data[1].end(), 0.0) / data[1].size();
 
-								   double variance = std::accumulate(data[1].begin(), data[1].end(), 0.0, [&](double acc, double val)
-																	 { return acc + std::pow(val - mean, 2); });
+								   //double variance = std::accumulate(data[1].begin(), data[1].end(), 0.0, [&](double acc, double val)
+											//						 { return acc + std::pow(val - mean, 2); });
 
-								   variance /= data[1].size();
+								   //variance /= data[1].size();
 
 								   for (size_t i = 0; i < data[0].size(); i++)
 								   {
 									   error += std::pow(std::log(data[1][i]) - std::log(model[1][i]), 2);
 								   }
-								   return error / variance;
-								   //    return error;
+								   //return error / variance;
+								       return error;
 							   }}
 		{
 		}
@@ -236,7 +237,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 		double contract_coeff{0.5};
 		double shrink_coeff{0.5};
 
-		double minError{1e-10};
+		double minError{0};
 		long int maxIteration{3000};
 	};
 
