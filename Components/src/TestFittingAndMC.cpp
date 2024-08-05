@@ -877,16 +877,16 @@ namespace UI::Data::JunctionFitMasterUI
 		}
 
 		using namespace NumericStorm::Fitting;
-		
+
 		for (const auto &[i, item] : std::views::enumerate(simplexSettings.bounds))
 			initialPoint[i] = item.value;
-		
-		
+
+
 		setUp.simplexMin = Parameters<4>(min);
 		setUp.simplexMax = Parameters<4>(max);
 
 		Fitter<IVSimplexOptimizer<IVModel>> fitter = getFitter(setUp);
-		
+
 		*/
 		double T = m_characteristics[0].getTemperature();
 
@@ -912,37 +912,34 @@ namespace UI::Data::JunctionFitMasterUI
 			while (!m_optimizer.checkStop(state))
 			{
 				m_optimizer.oneStep(state);
-				if(i == 0)
+				if (i == 0)
 					numbIteration.push_back(state.getIteration());
-				
+
 				errors[i].push_back(state.getBestPoint().getError());
 
 				for (const auto& [index, p] : std::views::enumerate(state.getBestPoint().getParameters())) {
 					parameters[index].push_back(p);
 				}
-				
+
 				timeline.push_back(state.getBestPoint().getData());
 			}
 
-			 for (const auto &[dest, src] : std::views::zip(initialPoint.getParameters(), state.getBestPoint().getParameters()))
+			for (const auto& [dest, src] : std::views::zip(initialPoint.getParameters(), state.getBestPoint().getParameters()))
 				dest = src;
 		}
-		for (const auto &item : initialPoint.getParameters())
+		for (const auto& item : initialPoint.getParameters())
 			std::cout << item << " " << std::endl;
 
-			Characteristic toAdd;
-			toAdd.setAll(item.rangedData[0]);
-			toAdd.parameters.parameters = initialPoint.getParameters();
-			toAdd.getTemperature() = item.getTemperature();
-			JunctionFitMasterFromNS::IVFitting::IVModel()(toAdd.originalData, toAdd.parameters.parameters, toAdd.getTemperature());
-			std::string name;
-			for (const auto &item : initialPoint.getParameters())
-				name += std::to_string(item) + "  ";
-			toAdd.name = name;
-			fittedCharacteristics.push_back(toAdd);
-		}
-		for (auto &item : fittedCharacteristics)
-			m_characteristics.push_back(item);
+		Characteristic toAdd;
+		toAdd.setAll(m_characteristics[0].rangedData[0]);
+		toAdd.parameters.parameters = initialPoint.getParameters();
+		toAdd.getTemperature() = m_characteristics[0].getTemperature();
+		JunctionFitMasterFromNS::IVFitting::IVModel()(toAdd.originalData, toAdd.parameters.parameters, toAdd.getTemperature());
+		std::string name;
+		for (const auto& item : initialPoint.getParameters())
+			name += std::to_string(item) + "  ";
+		toAdd.name = name;
+		m_characteristics.push_back(toAdd);
 	};
 
 
