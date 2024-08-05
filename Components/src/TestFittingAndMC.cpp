@@ -14,6 +14,44 @@ static int itersPerFit = 850;
 static int done = 0;
 namespace UI::Data::JunctionFitMasterUI
 {
+	static std::vector<double> numbIteration;
+	static std::vector<std::vector<double>> errors;
+
+	static std::vector<std::vector<double>> parameters;
+	static std::vector<NumericStorm::Fitting::Data> timeline;
+
+
+	using namespace NumericStorm::Fitting;
+
+	struct TestingData {
+
+		struct trueData {
+			double A = 1.5067;
+			double I0 = 6.418e10;
+			double Rs = 7.7;
+			double Rsh = 6963;
+			double T = 330;
+			Parameters<4> parameters{ {A, I0, Rs, Rsh} };
+		} true_data{};
+
+		/*struct trueData {
+			double A = 1.5067;
+			double I0 = 6.418e-7;
+			double Rs = 7.7;
+			double Rsh = 6963;
+			double T = 330;
+			Parameters<4> parameters{ {A, I0, Rs, Rsh} };
+		} true_data{};*/
+
+
+		struct simplexInit {
+			Parameters<4> minBounds{ {0.5, 1e-9, 1, 1e4} };
+			Parameters<4> maxBounds{ { 2.0, 1e-7, 10, 9e4} };
+			Parameters<4> initialGuess{ { 1.5746, 1.6e-8, 6.77, 7000} };
+		} simplex_init{};
+
+	} init_data{};
+
 
 	void utils::generateVectorAtGivenRanges(std::vector<double> &destination, double min, double max, double step)
 	{
@@ -288,12 +326,15 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::Begin("plotting the error");
 		if (ImPlot::BeginPlot("plotting the error", {ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y}))
 		{
-			auto transformForwardLinear = [](double v, void *)
-			{ return std::log(std::abs(v)); };
-			auto transformForwardNaturalLog = [](double v, void *)
-			{ return std::exp(v); };
+			ImGui::Begin("Iteration vs error for each point");
+			if (ImPlot::BeginPlot("error progression", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }))
+			{
+				auto transformForwardLinear = [](double v, void*)
+					{ return std::log(std::abs(v)); };
+				auto transformForwardNaturalLog = [](double v, void*)
+					{ return std::exp(v); };
 
-			ImPlot::SetupAxes("n", "E", plotSettings.plotBaseFlags, plotSettings.plotBaseFlags);
+				ImPlot::SetupAxes("n", "E", plotSettings.plotBaseFlags, plotSettings.plotBaseFlags);
 
 			if (plotSettings.xLog)
 				ImPlot::SetupAxisScale(ImAxis_X1, transformForwardLinear, transformForwardNaturalLog);
@@ -336,6 +377,8 @@ namespace UI::Data::JunctionFitMasterUI
 			}
 		}
 		ImGui::End();
+
+
 
 		if (ImGui::Button("Monte Carlo Simulation"))
 			monteCarloEngine.settings.draw = true;
@@ -1071,7 +1114,9 @@ namespace UI::Data::JunctionFitMasterUI
 			// parameters[utils::cast<ParametersNames>(name)] = item;
 			parameters[static_cast<ParametersNames>(name)] = generatingData.params[utils::cast(name)].value;
 		}
-		parameters.Temperature = 210;
+		parameters.Temperature = init_data.true_data.T;
+
+		parameters.parameters = init_data.true_data.parameters;
 
 		Characteristic characteristic;
 		characteristic.parameters = parameters;
@@ -1143,6 +1188,11 @@ namespace UI::Data::JunctionFitMasterUI
 			}
 		}
 		*/
+
+		using namespace JunctionFitMasterFromNS::IVFitting;
+		IVFittingSetup setUp;
+		Parameters<4> initialPoint = init_data.simplex_init.initialGuess;
+		NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
 
 		//	// todo move to prepare fitting procedure
 		/*
@@ -1228,6 +1278,9 @@ namespace UI::Data::JunctionFitMasterUI
 		// for (auto &item : fittedCharacteristics)
 		//	m_characteristics.push_back(item);
 	};
+
+
+
 	void FittingTesting::AutoRange()
 	{
 		ImGui::Separator();

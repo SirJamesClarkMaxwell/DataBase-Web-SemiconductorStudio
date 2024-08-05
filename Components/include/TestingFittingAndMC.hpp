@@ -381,4 +381,11 @@ namespace UI::Data::JunctionFitMasterUI
 		void showParameterOverTime(std::vector<PreFitResult> &toInspect, const ParametersID &ID); //, const PreFitResult &result);
 	};
 
+	
+
+	
+
+	//iteration vs plotting each parameter of the best point
+	//timeline of the characteristic
+	//errors of every point
 }
