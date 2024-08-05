@@ -254,16 +254,21 @@ namespace UI::Data::JunctionFitMasterUI
 	enum class ParametersID;
 	struct PreFitResult
 	{
-		PreFitResult() = default;
-
+		PreFitResult()
+			: numberOfIterations(4, 1), xLog(4, false), yLog(4, false) {};
 		Characteristic originalCharacteristic;
 		NumericStorm::Fitting::Parameters<4> initialParameters;
-		int numberOfIterations;
-		std::vector<int> iterations;
+		std::vector<int> numberOfIterations;
+		std::vector<double> iterations;
 		std::vector<Characteristic> characteristicsOverIterations;
 		std::vector<NumericStorm::Fitting::Parameters<4>> parametersOverIterations;
 		std::vector<double> errorOverIteration;
-		std::unordered_map<ParametersID, std::function<void>()> specialFunctions;
+		bool enable = true;
+		void setXlog(int index, bool toSet) { xLog[index] = toSet; };
+		void setYlog(int index, bool toSet) { yLog[index] = toSet; };
+		std::vector<bool> xLog;
+		std::vector<bool> yLog;
+		std::vector<double> x, y;
 	};
 	struct PreFit
 	{
@@ -280,7 +285,7 @@ namespace UI::Data::JunctionFitMasterUI
 		static void runOneFit(std::vector<PreFitResult> *results,
 							  JunctionFitMasterFromNS::IVFitting::IVFittingSetup *setUp,
 							  NumericStorm::Fitting::Parameters<4> *initialParams, Characteristic *item);
-		void Init();
+		void Init(bool useRangedBounds = false, int iterationCount = 2000);
 	};
 
 	enum class ParametersID
@@ -306,6 +311,8 @@ namespace UI::Data::JunctionFitMasterUI
 	class FittingTesting
 	{
 	public:
+		FittingTesting()
+			: showWindowsOverTime(5, false) {};
 		PlotSettings plotSettings;
 		TableSettings tableSettings;
 		int characteristicIndex{-1};
@@ -324,6 +331,9 @@ namespace UI::Data::JunctionFitMasterUI
 		bool m_openedContentBrowserData = false;
 		bool m_openGenerateData = false;
 		bool m_showSimplexSettings = false;
+		bool useRangedBounds = false;
+		bool showWindowOverTime = false;
+		std::vector<bool> showWindowsOverTime;
 
 	private:
 		void drawLegend();
@@ -363,7 +373,9 @@ namespace UI::Data::JunctionFitMasterUI
 		void DoAutoRange();
 		void AutoRange();
 
-		void CharacteristicInspector();
+		void CharacteristicInspector(ParametersID ID, const PreFitResult &prefitResult);
+		void ShowWindowOverTime(std::vector<PreFitResult> &result);
+		void showParameterOverTime(std::vector<PreFitResult> &toInspect, const ParametersID &ID); //, const PreFitResult &result);
 	};
 
 }

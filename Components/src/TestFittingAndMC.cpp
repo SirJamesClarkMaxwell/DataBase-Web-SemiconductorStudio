@@ -122,9 +122,13 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::SameLine();
 		if (ImGui::Button("PreFit"))
 			PreFit();
+		if (ImGui::Button("Show Evolution over time") || showWindowOverTime)
+			ShowWindowOverTime(prefit.results);
 		ImGui::SameLine();
 		if (ImGui::Button("Print Results"))
 			PrintResults();
+		ImGui::SameLine();
+		ImGui::Checkbox("ranged Bounds", &useRangedBounds);
 		float min{0.001}, max{5}, step{0.01};
 
 		if (characteristicIndex != -1)
@@ -258,6 +262,7 @@ namespace UI::Data::JunctionFitMasterUI
 	};
 	void FittingTesting::DrawActionsPanel()
 	{
+
 		ImGui::PushItemWidth(200);
 		if (ImGui::Button("Load Data"))
 			m_openedContentBrowserData = true;
@@ -426,6 +431,7 @@ namespace UI::Data::JunctionFitMasterUI
 	}
 	void FittingTesting::PreFit()
 	{
+		prefit.Init(useRangedBounds, itersPerFit);
 		for (const auto &[setUp, init, characteristic] : std::views::zip(prefit.setUps, prefit.initialPoints, prefit.fittingCharacteristics))
 		{
 			prefit.futureResults.push_back(std::async(std::launch::async, PreFit::runOneFit, &prefit.results, &setUp, &init, &characteristic));
@@ -448,12 +454,15 @@ namespace UI::Data::JunctionFitMasterUI
 		// }
 		for (auto &item : characteristics)
 			m_characteristics.push_back(item);
+		done = 0;
+		std::cout << "\n\n";
 	};
-	void PreFit::Init()
+	void PreFit::Init(bool useRangedBounds, int iterationCount)
 	{
 		using namespace NumericStorm::Fitting;
 		using namespace JunctionFitMasterFromNS::IVFitting;
-
+		setUps.clear();
+		initialPoints.clear();
 		// Generating data
 		utils::generateVectorAtGivenRanges(V, 0.01, 3, 0.001);
 		utils::generateVectorAtGivenRanges(I, 0.01, 3, 0.001);
@@ -482,11 +491,16 @@ namespace UI::Data::JunctionFitMasterUI
 		for (const auto &[i, item] : std::views::enumerate(I0s))
 		{
 			IVFittingSetup setUp;
-			setUp.maxIteration = numberOfIterations;
+			setUp.maxIteration = iterationCount;
+
 			setUp.simplexMin = Parameters<4>({0.5, 1 * std::pow(10, item), 1e-5, 10});
 			setUp.simplexMax = Parameters<4>({20, 9 * std::pow(10, item), 9e2, 9e9});
-			// setUp.simplexMin = Parameters<4>({0.5, 1e-20, 1e-6, 1e5});
-			// setUp.simplexMax = Parameters<4>({20, 1e-3, 9e-6, 9e5});
+			if (useRangedBounds)
+			{
+				setUp.simplexMin = Parameters<4>({0.5, 1e-20, 1e-6, 1e5});
+				setUp.simplexMax = Parameters<4>({20, 1e-3, 9e-6, 9e5});
+			}
+
 			setUps.push_back(setUp);
 			// initialPoints.push_back(Parameters<4>({ 5, 5 * std::pow(10, item), 7e-6, 7e5	 }));
 			std::array<double, 4> initialPoint;
@@ -504,15 +518,15 @@ namespace UI::Data::JunctionFitMasterUI
 	{
 		using namespace NumericStorm::Fitting;
 		using namespace JunctionFitMasterFromNS::IVFitting;
-		PreFitResult result;
+		PreFitResult internalResult;
 		// auto fitter = JunctionFitMasterFromNS::IVFitting::getFitter(*setUp);
 		// auto out = fitter.fit(*initalParams, item->originalData, 210);
 		NumericStorm::Fitting::Parameters<4> initialPoint = *initalParams;
-		result.initialParameters = initialPoint;
+		internalResult.initialParameters = initialPoint;
 		auto data = item->originalData;
 		//!
 		int j = 1;
-		for (int i = 0; i < numberOffits; i++)
+		for (int i = 0; i < 2; i++)
 		{
 			// auto out = fitter.fit(initialPoint, data, T);
 
@@ -522,15 +536,17 @@ namespace UI::Data::JunctionFitMasterUI
 			while (!m_optimizer.checkStop(state))
 			{
 				m_optimizer.oneStep(state);
-				result.iterations.push_back(j++);
-
+				internalResult.iterations.push_back(j++);
+				for (auto &item : internalResult.numberOfIterations)
+					item = j;
 				auto iterationParameters = Parameters<4>(state.getBestPoint().getParameters());
-				result.parametersOverIterations.push_back(iterationParameters);
+				internalResult.parametersOverIterations.push_back(iterationParameters);
+				internalResult.errorOverIteration.push_back(state.getBestPoint().getError());
 				Characteristic characteristicToPush;
 				characteristicToPush.get(Characteristic::ReturningType::Voltage) = state.getBestPoint().getData()[0];
 				characteristicToPush.get(Characteristic::ReturningType::Current) = state.getBestPoint().getData()[1];
 				characteristicToPush.name = "fit: " + std::to_string(i) + " iteration: " + std::to_string(j);
-				result.characteristicsOverIterations.push_back(characteristicToPush);
+				internalResult.characteristicsOverIterations.push_back(characteristicToPush);
 			}
 			for (const auto &[dest, src] : std::views::zip(initialPoint.getParameters(), state.getBestPoint().getParameters()))
 				dest = src;
@@ -545,6 +561,7 @@ namespace UI::Data::JunctionFitMasterUI
 			std::cout << "\n";
 		};
 		std::lock_guard<std::mutex> lock(Mutex);
+		results->push_back(internalResult);
 		Characteristic toPush(*item);
 		auto data2(item->originalData);
 		NumericStorm::Fitting::Data dataToCalculate(2);
@@ -555,7 +572,7 @@ namespace UI::Data::JunctionFitMasterUI
 		toPush.get(Characteristic::ReturningType::Current) = dataToCalculate[1];
 
 		characteristics.push_back(toPush);
-		std::cout << std::to_string(done++) << "I finished" << std::endl;
+		std::cout << std::to_string(done++) << " I finished" << std::endl;
 
 		// std::cout << "\n\n";
 		// std::cout << "min boudns: ";
@@ -569,7 +586,7 @@ namespace UI::Data::JunctionFitMasterUI
 		// results->push_back(initialPoint);
 	};
 
-	void FittingTesting::CharacteristicInspector(const PreFitResult &prefitResult)
+	void FittingTesting::CharacteristicInspector(ParametersID ID, const PreFitResult &prefitResult)
 	{
 		int numberOfIterations = prefitResult.iterations.size() - 1;
 		ImGui::Begin("Characteristic Inspector");
@@ -592,96 +609,150 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::Text(("Error: " + std::to_string(prefitResult.errorOverIteration[numberOfIterations])).c_str());
 
 		ImGui::End();
-	};
-	void CharacteristicInspector::showOverTime(ParametersID ID, const PreFitResult &toInspect)
+	}
+	void FittingTesting::showParameterOverTime(std::vector<PreFitResult> &toInspect, const ParametersID &ID)
 	{
-		static bool xlog = false, ylog = false;
-		auto mapIDToString = [](ParametersID ID)
+		static bool xLog = false, yLog = false;
+		auto mapIDToString = [](const ParametersID &ID)
 		{
 			switch (ID)
 			{
-			case (ParametersID::A):
+			case ParametersID::A:
 				return "A";
-
-			case (ParametersID::I0):
+			case ParametersID::I0:
 				return "I0";
-
-			case (ParametersID::Rs):
+			case ParametersID::Rs:
 				return "Rs";
-
-			case (ParametersID::Rp):
+			case ParametersID::Rp:
 				return "Rp";
-
-			case (ParametersID::Error):
+			case ParametersID::Error:
 				return "Error";
-
-			case (ParametersID::Characteristic):
+			case ParametersID::Characteristic:
 				return "Characteristic";
+			default:
+				return "";
 			}
 		};
-		auto mapToData = [&](ParametersID ID)
+		auto mapToData = [&](const ParametersID &ID, const PreFitResult &result)
 		{
 			using namespace NumericStorm::Fitting;
 			auto getItem = [&](const Parameters<4> &parameters, ParametersID ID)
 			{
-				return parameters[utils::cast<ParametersID>(ID)];
+				return parameters[utils::cast(ID)];
 			};
+			std::vector<double> toReturn;
+			int size = result.numberOfIterations[utils::cast(ID)] - 1;
+			toReturn.resize(size);
 			switch (ID)
 			{
-			case (ParametersID::A || ParametersID::I0 || ParametersID::Rs || ParametersID::Rp):
-			{
-				std::vector<double> toReturn;
-				toReturn.resize(toInspect.numberOfIterations);
-				toReturn = std::views::zip_transform(getItem, ID, toInspect.parametersOverIterations);
-				return toReturn;
-			}
+			case ParametersID::A:
+			case ParametersID::I0:
+			case ParametersID::Rs:
+			case ParametersID::Rp:
 
-			case (ParametersID::Error):
-				return toInspect.errorOverIteration;
-
-			case (ParametersID::Characteristic):
-				return toInspect.characteristicsOverIterations;
+				std::transform(result.parametersOverIterations.begin(), result.parametersOverIterations.begin() + size, toReturn.begin(),
+							   [&](const Parameters<4> &params)
+							   { return getItem(params, ID); });
+				break;
+			case ParametersID::Error:
+				return result.errorOverIteration;
+			default:
+				break;
 			};
+			return toReturn;
 		};
+
 		std::string name = mapIDToString(ID);
 		ImGui::Begin((name + " over time").c_str());
+		showWindowsOverTime[utils::cast(ID)] = true;
+		bool xlog = toInspect[0].xLog[static_cast<int>(ID)];
+		bool ylog = toInspect[0].yLog[static_cast<int>(ID)];
 
-		ImGui::Checkbox("x", &xlog);
+		ImGui::Checkbox("x log scale", &xlog);
 		ImGui::SameLine();
-		ImGui::Checkbox("y", &ylog);
+		ImGui::Checkbox("y log scale", &ylog);
 		ImGui::SameLine();
-		ImGui::SliderInt("number of Iteration", &iterationCount, 0, toInspect.numberOfIterationsnumberOfIterations;
+		toInspect[0].setXlog(static_cast<int>(ID), xlog);
+		toInspect[0].setYlog(static_cast<int>(ID), ylog);
 
-		if (ImPlot::BeginPlot((name + " plot" + " over time").c_str()))
+		static int maxSize = toInspect[0].iterations.size();
+		int *itNumber = (int *)&toInspect[0].numberOfIterations[static_cast<int>(ID)];
+		std::vector<double> x, y;
+		// for (const auto &item : toInspect)
+		// {
+		// }
+		if (ImGui::SliderInt("number of Iteration", itNumber, 1, maxSize))
+		{
+			for (const auto &item : toInspect)
+			{
+				x = item.iterations;
+				y = mapToData(ID, item);
+			}
+		}
+		
+		ImVec2 plot_size(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+		if (ImPlot::BeginPlot((name + " plot" + " over time").c_str(), plot_size, ImPlotAxisFlags_None))
 		{
 			auto transformForwardLinear = [](double v, void *)
 			{ return std::log(std::abs(v)); };
 			auto transformForwardNaturalLog = [](double v, void *)
 			{ return std::exp(v); };
 
-			ImPlot::SetupAxes("V", "I", plotBaseFlags, plotBaseFlags);
+			ImPlot::SetupAxes("V", "I", ImPlotAxisFlags_None);
 
 			if (xLog)
 				ImPlot::SetupAxisScale(ImAxis_X1, transformForwardLinear, transformForwardNaturalLog);
 			if (yLog)
-				ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
-			auto X = toInspect.iterations;
-			auto Y = mapToData(ID);
-			ImPlot::PlotLine(("name " + name).c_str(), X.data(), Y.data(), toInspect.numberOfIterations);
-
-			if (ID == ParametersID::Characteristic)
+				ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear,transformForwardNaturalLog);
+			for (auto &item : toInspect)
 			{
-				using namespace Characteristic::ReturningType;
-				auto &dataToPlot = originalCharacteristic.originalData;
-				auto &V = dataToPlot.get(Voltage);
-				auto &I = dataToPlot.get(Current);
-				int size = V.size();
-				ImPlot::PlotLine("Mother characteristic", V.data(), I.data(), size);
+				x = item.iterations;
+				y = mapToData(ID, item);
+				std::ostringstream oss;
+				oss << std::scientific << std::setprecision(2) << item.initialParameters[utils::cast(ParametersID::I0)];
+				
+				ImPlot::PlotLine(oss.str().c_str(), x.data(), y.data(), toInspect[0].numberOfIterations[utils::cast(ID)]);
 			}
 			ImPlot::EndPlot();
 		}
+		std::string nameToClose = static_cast<std::string>(mapIDToString(ID));
+		nameToClose += std::string(" close");
+		if (ImGui::Button(nameToClose.c_str()))
+			showWindowsOverTime[utils::cast(ID)] = false;
 		ImGui::End();
 	};
+	void FittingTesting::ShowWindowOverTime(std::vector<PreFitResult> &result)
+	{
+		showWindowOverTime = true;
+		std::vector<std::string>
+			names{"A: ", "I0: ", "Rs: ", "Rp: "};
+
+		ImGui::Begin("Show over iterations");
+		using namespace utils;
+		using IDs = ParametersID;
+
+		for (const auto &[name, ID, open] : std::views::zip(names, std::ranges::iota_view(cast(IDs::A), cast(IDs::Error)), showWindowsOverTime))
+		{
+			auto NewName = name + "over time";
+			if (ImGui::Button(NewName.c_str()) || open)
+			{
+				open = true;
+				showParameterOverTime(result, cast<IDs>(ID));
+			}
+		}
+		if (ImGui::Button("Close Window"))
+			showWindowOverTime = false;
+		ImGui::End();
+
+		ImGui::Begin("PreFit table");
+		if (ImGui::BeginTable("PreFit table", 6, ImGuiTableFlags_None | ImGuiTableFlags_Resizable))
+		{
+
+			ImGui::EndTable();
+		}
+
+		ImGui::End();
+	}
 
 	void FittingTesting::LoadCharacteristics()
 	{
