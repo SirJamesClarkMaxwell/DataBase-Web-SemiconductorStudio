@@ -177,15 +177,18 @@ namespace JunctionFitMasterFromNS::IVFitting
 		static void current(Data &data, const Parameters<4> &parameters, const IVAdditionalParameters &aParameters)
 		{
 			auto [A, I0, Rs, Rch] = parameters.getParameters();
-
+			A = std::abs(A);
+			I0 = std::abs(I0);
+			Rs = std::abs(Rs);
+			Rch = std::abs(Rch);
 			const double k = 8.6e-5;
 			const double q = 1.60217662e-19;
 
 			auto func = [&](double &V, double &I, double &I0, double &A, double &Rsch, double &Rs, double T)
 			{
 				double x = ((q * I0 * Rs) / (A * k * T)) * std::exp(V / (A * k * T));
-				//double I_lw = x > -std::exp(-1) ? utl::LambertW<0>(x) : utl::LambertW<-1>(x);
-				double I_lw = utl::LambertW<0>(x) ;
+				// double I_lw = x > -std::exp(-1) ? utl::LambertW<0>(x) : utl::LambertW<-1>(x);
+				double I_lw = utl::LambertW<0>(x);
 				I_lw *= (A * k * T) / Rs;
 				I = I_lw + (V - I_lw * Rs) / Rsch;
 			};
@@ -203,19 +206,19 @@ namespace JunctionFitMasterFromNS::IVFitting
 		IVError() : ErrorModel{[](const Data &data, const Data &model)
 							   {
 								   double error{0.0};
-								   //double mean = std::accumulate(data[1].begin(), data[1].end(), 0.0) / data[1].size();
+								   // double mean = std::accumulate(data[1].begin(), data[1].end(), 0.0) / data[1].size();
 
-								   //double variance = std::accumulate(data[1].begin(), data[1].end(), 0.0, [&](double acc, double val)
-											//						 { return acc + std::pow(val - mean, 2); });
+								   // double variance = std::accumulate(data[1].begin(), data[1].end(), 0.0, [&](double acc, double val)
+								   //						 { return acc + std::pow(val - mean, 2); });
 
-								   //variance /= data[1].size();
+								   // variance /= data[1].size();
 
 								   for (size_t i = 0; i < data[0].size(); i++)
 								   {
 									   error += std::pow(std::log(data[1][i]) - std::log(model[1][i]), 2);
 								   }
-								   //return error / variance;
-								       return error;
+								   // return error / variance;
+								   return error;
 							   }}
 		{
 		}
@@ -236,8 +239,8 @@ namespace JunctionFitMasterFromNS::IVFitting
 		double expand_coeff{2.0};
 		double contract_coeff{0.5};
 		double shrink_coeff{0.5};
-
-		double minError{0};
+		int numberOfFits{1};
+		double minError{1e-5};
 		long int maxIteration{3000};
 	};
 

@@ -255,7 +255,7 @@ namespace UI::Data::JunctionFitMasterUI
 	struct PreFitResult
 	{
 		PreFitResult()
-			: numberOfIterations(4, 1), xLog(4, false), yLog(4, false) {};
+			: numberOfIterations(5, 1), xLog(5, false), yLog(5, false) {};
 		Characteristic originalCharacteristic;
 		NumericStorm::Fitting::Parameters<4> initialParameters;
 		std::vector<int> numberOfIterations;
@@ -269,19 +269,22 @@ namespace UI::Data::JunctionFitMasterUI
 		std::vector<bool> xLog;
 		std::vector<bool> yLog;
 		std::vector<double> x, y;
+		std::string name;
+		int numberOfFits{ 1 };
+		operator bool() { return enable; };
 	};
 	struct PreFit
 	{
 		PreFit() { Init(); }
 
-		std::vector<Characteristic> fittingCharacteristics;
+				std::vector<Characteristic> fittingCharacteristics;
 		std::vector<double> V, I;
 		std::vector<JunctionFitMasterFromNS::IVFitting::IVFittingSetup> setUps;
 		std::vector<NumericStorm::Fitting::Parameters<4>> initialPoints;
 		std::vector<PreFitResult> results;
 		std::vector<std::future<void>> futureResults;
 		int numberOfIterations = 1500;
-
+		int numberOfFits{ 1 };
 		static void runOneFit(std::vector<PreFitResult> *results,
 							  JunctionFitMasterFromNS::IVFitting::IVFittingSetup *setUp,
 							  NumericStorm::Fitting::Parameters<4> *initialParams, Characteristic *item);

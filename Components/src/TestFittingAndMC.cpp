@@ -282,7 +282,7 @@ namespace UI::Data::JunctionFitMasterUI
 
 		if (ImGui::Button("Fit"))
 			Fit();
-		ImGui::InputInt("number Of fits", &numberOffits);
+		ImGui::InputInt("number Of fits", &prefit.numberOfFits);
 		ImGui::SameLine();
 		ImGui::InputInt("iterations per fit", &itersPerFit);
 		ImGui::Begin("plotting the error");
@@ -485,20 +485,20 @@ namespace UI::Data::JunctionFitMasterUI
 		fittingCharacteristic.m_color = ImVec4(1, 0, 0, 1);
 		characteristics.push_back(fittingCharacteristic);
 		std::vector<double> I0s;
-		utils::generateVectorAtGivenRanges(I0s, -20, -2, 1);
+		utils::generateVectorAtGivenRanges(I0s, -5, -5, 1);
 
 		// for (int i=0;i<18;i++)
 		for (const auto &[i, item] : std::views::enumerate(I0s))
 		{
 			IVFittingSetup setUp;
 			setUp.maxIteration = iterationCount;
-
+			setUp.numberOfFits = numberOfFits;
 			setUp.simplexMin = Parameters<4>({0.5, 1 * std::pow(10, item), 1e-5, 10});
 			setUp.simplexMax = Parameters<4>({20, 9 * std::pow(10, item), 9e2, 9e9});
 			if (useRangedBounds)
 			{
-				setUp.simplexMin = Parameters<4>({0.5, 1e-20, 1e-6, 1e5});
-				setUp.simplexMax = Parameters<4>({20, 1e-3, 9e-6, 9e5});
+				setUp.simplexMin = Parameters<4>({0.5, 1 * std::pow(10, item), 1e-3, 1e5});
+				setUp.simplexMax = Parameters<4>({20, 9 * std::pow(10, item), 9e-3, 9e5});
 			}
 
 			setUps.push_back(setUp);
@@ -506,8 +506,8 @@ namespace UI::Data::JunctionFitMasterUI
 			std::array<double, 4> initialPoint;
 			initialPoint[0] = Random::Float(0.5, 5);
 			initialPoint[1] = Random::Float(1, 9) * std::pow(10, item);
-			initialPoint[0] = Random::Float(1, 9) * std::pow(10, Random::Float(-5, 2));
-			initialPoint[0] = Random::Float(1, 9) * std::pow(10, Random::Float(1, 9));
+			initialPoint[2] = Random::Float(4, 6) * 1e-3;
+			initialPoint[3] = Random::Float(4, 6) * 1e5;
 			initialPoints.push_back(Parameters<4>(initialPoint));
 		}
 	};
@@ -523,10 +523,13 @@ namespace UI::Data::JunctionFitMasterUI
 		// auto out = fitter.fit(*initalParams, item->originalData, 210);
 		NumericStorm::Fitting::Parameters<4> initialPoint = *initalParams;
 		internalResult.initialParameters = initialPoint;
+		std::ostringstream tmpName;
+		tmpName << std::scientific << std::setprecision(2) << initialPoint[utils::cast(ParametersID::I0)];
+		internalResult.name = tmpName.str();
 		auto data = item->originalData;
 		//!
 		int j = 1;
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < setUp->numberOfFits; i++)
 		{
 			// auto out = fitter.fit(initialPoint, data, T);
 
@@ -689,7 +692,7 @@ namespace UI::Data::JunctionFitMasterUI
 				y = mapToData(ID, item);
 			}
 		}
-		
+
 		ImVec2 plot_size(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
 		if (ImPlot::BeginPlot((name + " plot" + " over time").c_str(), plot_size, ImPlotAxisFlags_None))
 		{
@@ -703,15 +706,15 @@ namespace UI::Data::JunctionFitMasterUI
 			if (xLog)
 				ImPlot::SetupAxisScale(ImAxis_X1, transformForwardLinear, transformForwardNaturalLog);
 			if (yLog)
-				ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear,transformForwardNaturalLog);
+				ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
 			for (auto &item : toInspect)
 			{
-				x = item.iterations;
-				y = mapToData(ID, item);
-				std::ostringstream oss;
-				oss << std::scientific << std::setprecision(2) << item.initialParameters[utils::cast(ParametersID::I0)];
-				
-				ImPlot::PlotLine(oss.str().c_str(), x.data(), y.data(), toInspect[0].numberOfIterations[utils::cast(ID)]);
+				if (item)
+				{
+					x = item.iterations;
+					y = mapToData(ID, item);
+					ImPlot::PlotLine(item.name.c_str(), x.data(), y.data(), toInspect[0].numberOfIterations[utils::cast(ID)]);
+				}
 			}
 			ImPlot::EndPlot();
 		}
@@ -725,19 +728,25 @@ namespace UI::Data::JunctionFitMasterUI
 	{
 		showWindowOverTime = true;
 		std::vector<std::string>
-			names{"A: ", "I0: ", "Rs: ", "Rp: "};
+			names{"A: ", "I0: ", "Rs: ", "Rp: ", "Error"};
 
 		ImGui::Begin("Show over iterations");
 		using namespace utils;
 		using IDs = ParametersID;
 
-		for (const auto &[name, ID, open] : std::views::zip(names, std::ranges::iota_view(cast(IDs::A), cast(IDs::Error)), showWindowsOverTime))
+		for (const auto &[name, ID, open] : std::views::zip(names, std::ranges::iota_view(cast(IDs::A), cast(IDs::Characteristic)), showWindowsOverTime))
 		{
 			auto NewName = name + "over time";
 			if (ImGui::Button(NewName.c_str()) || open)
 			{
 				open = true;
-				showParameterOverTime(result, cast<IDs>(ID));
+				try
+				{
+					showParameterOverTime(result, cast<IDs>(ID));
+				}
+				catch (std::exception& e)
+				{
+				}
 			}
 		}
 		if (ImGui::Button("Close Window"))
@@ -745,9 +754,71 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::End();
 
 		ImGui::Begin("PreFit table");
-		if (ImGui::BeginTable("PreFit table", 6, ImGuiTableFlags_None | ImGuiTableFlags_Resizable))
-		{
 
+		if (ImGui::Button("Select all prefit"))
+		{
+			for (auto &item : result)
+				item.enable = true;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("UnSelect all prefit"))
+		{
+			for (auto &item : result)
+				item.enable = false;
+			// done = 0;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Remove Selected prefit"))
+		{
+			std::vector<PreFitResult> tmp;
+			for (auto &item : result)
+			{
+				if (!item)
+					tmp.push_back(item);
+			}
+			result = tmp;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Remove not Selected prefit"))
+		{
+			std::vector<PreFitResult> tmp;
+			for (auto &item : result)
+			{
+				if (item)
+					tmp.push_back(item);
+			}
+			result = tmp;
+		}
+		if (ImGui::BeginTable("PreFit table", 8, ImGuiTableFlags_None | ImGuiTableFlags_Resizable))
+		{
+			ImGui::TableSetupColumn("Checked");
+			ImGui::TableSetupColumn("Name");
+			for (auto &item : names)
+				ImGui::TableSetupColumn(item.c_str());
+			ImGui::TableSetupColumn("Error");
+			ImGui::TableHeadersRow();
+			if (done > 0)
+			{
+				try
+				{
+					for (auto &item : result)
+					{
+						ImGui::TableNextRow();
+						ImGui::TableNextColumn();
+						ImGui::Checkbox(item.name.c_str(), &item.enable);
+						ImGui::TableNextColumn();
+						for (auto &value : item.initialParameters.getParameters())
+						{
+							ImGui::Text(std::to_string(value).c_str());
+							ImGui::TableNextColumn();
+						}
+						ImGui::Text(std::to_string(*(item.errorOverIteration.end() - 1)).c_str());
+					}
+				}
+				catch (std::exception &e)
+				{
+				}
+			}
 			ImGui::EndTable();
 		}
 
@@ -1203,69 +1274,69 @@ namespace UI::Data::JunctionFitMasterUI
 		int i = 1;
 		std::for_each(std::execution::seq, characteristicToAutoRange.begin(), characteristicToAutoRange.end(), [&](Characteristic &item)
 					  {
-			using namespace JunctionFitMasterFromNS::IVFitting;
-			std::vector<Characteristic> fittingResults;
-			for (auto minRange : minRanges)
-			{
-				for (auto maxRange : maxRanges)
+				using namespace JunctionFitMasterFromNS::IVFitting;
+				std::vector<Characteristic> fittingResults;
+				for (auto minRange : minRanges)
 				{
-					
-					// todo move this to a single function
-					Characteristic item = characteristicToAutoRange[0]; //! replace by characteristic in for loop
-					double minI = item.getMin() + minRange;
-					double maxI = item.getMax() + maxRange;
-
-					// 2. find nearest point -> get index
-					// 3. range characteristic
-					std::vector<double> I = item.get(Characteristic::ReturningType::Current);
-					item.lowerIndex = std::distance(I.begin(), std::lower_bound(I.begin(), I.end(), minI));
-					item.upperIndex = std::distance(I.begin(), std::lower_bound(I.begin(), I.end(), maxI));
-					item.updateRangedCharacteristic();
-
-					// 4. fit
-					// todo -> this can be extracted to another function which will take settings and characteristic!
-					std::array<double, 4> min, max;
-					for (const auto &[i, item] : std::views::enumerate(simplexSettings.bounds))
+					for (auto maxRange : maxRanges)
 					{
-						min[i] = item.items[0];
-						max[i] = item.items[1];
-					}
 
-					IVFittingSetup setUp{};
-					setUp.simplexMin = Parameters<4>(min);
-					setUp.simplexMax = Parameters<4>(max);
+						// todo move this to a single function
+						Characteristic item = characteristicToAutoRange[0]; //! replace by characteristic in for loop
+						double minI = item.getMin() + minRange;
+						double maxI = item.getMax() + maxRange;
 
-					Fitter<IVSimplexOptimizer<IVModel>> fitter = getFitter(setUp);
-					NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
-					double T = m_characteristics[0].getTemperature();
-					auto result = fitter.fit(setUp.simplexMin, data, T);
-					item.parameters.parameters = result.getParameters().getParameters();
-					std::cout << "i: " << i << " minRange: " << minRange << " maxRange: " << maxRange << " ";
-					std::vector<std::string> names{ "A: ","I0: ","Rs: ","Rp: " };
-					for (const auto& [i, name] : std::views::zip(names,item.parameters.parameters))
-						std::cout << name << item << " ";
-					std::cout << std::endl;
-				};
-				// 5. add to tmp list
-				fittingResults.push_back(item);
-			}
+						// 2. find nearest point -> get index
+						// 3. range characteristic
+						std::vector<double> I = item.get(Characteristic::ReturningType::Current);
+						item.lowerIndex = std::distance(I.begin(), std::lower_bound(I.begin(), I.end(), minI));
+						item.upperIndex = std::distance(I.begin(), std::lower_bound(I.begin(), I.end(), maxI));
+						item.updateRangedCharacteristic();
 
-			// sort list
-			std::sort(fittingResults.begin(), fittingResults.end());
-			// get best
-			std::cout << std::endl;
-			std::cout << std::endl;
-			std::vector<std::string> names{ "A: ","I0: ","Rs: ","Rp: " };
-			for (const auto& [i, name] : std::views::zip(names, fittingResults[0].parameters.parameters))
-				std::cout << item << " ";
-			std::cout << std::endl;
-			std::cout << std::endl;
-			for (const auto& [i, name] : std::views::zip(names, fittingResults[fittingResults.size()-1].parameters.parameters))
-				std::cout << item << " ";
-			std::cout << std::endl;
-			item.lowerIndex = fittingResults[0].lowerIndex;
-			item.upperIndex = fittingResults[0].upperIndex;
-			item.updateRangedCharacteristic(); });
+						// 4. fit
+						// todo -> this can be extracted to another function which will take settings and characteristic!
+						std::array<double, 4> min, max;
+						for (const auto& [i, item] : std::views::enumerate(simplexSettings.bounds))
+						{
+							min[i] = item.items[0];
+							max[i] = item.items[1];
+						}
+
+						IVFittingSetup setUp{};
+						setUp.simplexMin = Parameters<4>(min);
+						setUp.simplexMax = Parameters<4>(max);
+
+						Fitter<IVSimplexOptimizer<IVModel>> fitter = getFitter(setUp);
+						NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
+						double T = m_characteristics[0].getTemperature();
+						auto result = fitter.fit(setUp.simplexMin, data, T);
+						item.parameters.parameters = result.getParameters().getParameters();
+						std::cout << "i: " << i << " minRange: " << minRange << " maxRange: " << maxRange << " ";
+						std::vector<std::string> names{ "A: ","I0: ","Rs: ","Rp: " };
+						for (const auto& [i, name] : std::views::zip(names, item.parameters.parameters))
+							std::cout << name << item << " ";
+						std::cout << std::endl;
+					};
+					// 5. add to tmp list
+					fittingResults.push_back(item);
+				}
+
+				// sort list
+				std::sort(fittingResults.begin(), fittingResults.end());
+				// get best
+				std::cout << std::endl;
+				std::cout << std::endl;
+				std::vector<std::string> names{ "A: ","I0: ","Rs: ","Rp: " };
+				for (const auto& [i, name] : std::views::zip(names, fittingResults[0].parameters.parameters))
+					std::cout << item << " ";
+				std::cout << std::endl;
+				std::cout << std::endl;
+				for (const auto& [i, name] : std::views::zip(names, fittingResults[fittingResults.size() - 1].parameters.parameters))
+					std::cout << item << " ";
+				std::cout << std::endl;
+				item.lowerIndex = fittingResults[0].lowerIndex;
+				item.upperIndex = fittingResults[0].upperIndex;
+				item.updateRangedCharacteristic(); });
 	};
 
 	void FittingTesting::DoMonteCarloSimulation() {
