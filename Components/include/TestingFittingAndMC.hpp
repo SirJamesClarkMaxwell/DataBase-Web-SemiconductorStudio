@@ -364,7 +364,7 @@ namespace UI::Data::JunctionFitMasterUI
 		void PrintResults();
 		void ShowMonteCarloSettings();
 
-		void Step(auto &optimizer, auto &state);
+		/*void Step(auto &optimizer, auto &state);*/
 
 		void DoMonteCarloSimulation();
 		void AddNoise();

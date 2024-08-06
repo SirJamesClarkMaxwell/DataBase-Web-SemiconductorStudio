@@ -178,10 +178,10 @@ namespace JunctionFitMasterFromNS::IVFitting
 		static void current(Data &data, const Parameters<4> &parameters, const IVAdditionalParameters &aParameters)
 		{
 			auto [A, I0, Rs, Rch] = parameters.getParameters();
-			A = std::abs(A);
-			I0 = std::abs(I0);
-			Rs = std::abs(Rs);
-			Rch = std::abs(Rch);
+			//A = A;
+			//I0 = I0;
+			//Rs = Rs;
+			//Rch = Rch;
 			const double k = 8.6e-5;
 			const double q = 1.60217662e-19;
 
