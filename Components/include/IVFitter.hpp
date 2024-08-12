@@ -199,7 +199,7 @@ namespace JunctionFitMasterFromNS::IVFitting
 
 			for (const auto &[V, I] : std::views::zip(data[0], data[1]))
 			{
-				func(V, I, I0, A, Rch, Rs, aParameters.T);
+				func(V, I, I0, A, Rch, Rs, 330);
 			};
 		};
 	};

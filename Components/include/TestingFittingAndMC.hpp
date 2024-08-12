@@ -11,6 +11,9 @@
 // #include "../../NumericStorm/NumericStorm/headers/FittingSandBoxFunctions.hpp"
 namespace UI::Data::JunctionFitMasterUI
 {
+	using namespace JunctionFitMasterFromNS::IVFitting;
+
+
 	class Characteristic;
 	using json = nlohmann::json;
 	void from_json(const json &jsonObject, Characteristic &characteristic);
@@ -317,7 +320,7 @@ namespace UI::Data::JunctionFitMasterUI
 		void PrintResults();
 		void ShowMonteCarloSettings();
 
-		void Step(auto &optimizer, auto &state);
+		void Step(IVSimplexOptimizer<IVModel>&optimizer, typename IVSimplexOptimizer<IVModel>::SettingsT::OptimizerStateT&state);
 
 		void DoMonteCarloSimulation();
 		void AddNoise();

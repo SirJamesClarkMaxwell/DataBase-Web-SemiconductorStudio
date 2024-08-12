@@ -43,9 +43,10 @@ namespace UI::Components
 		ImGui::Text("Hello World");
 		ImGui::End();
 		ShowSelectableTable();
-		ImPlot::ShowDemoWindow();
+		
 		ImGui::ShowDemoWindow();
 		*/
+		ImPlot::ShowDemoWindow();
 	}
 	bool operator==(const Characteristic &lhs, const Characteristic &rhs) { return lhs.getTemperature() == rhs.getTemperature(); };
 	void drawPlots(Data::DataPreview &dataPreview)
