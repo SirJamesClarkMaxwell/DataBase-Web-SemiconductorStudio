@@ -14,12 +14,11 @@ static int itersPerFit = 850;
 static int done = 0;
 namespace UI::Data::JunctionFitMasterUI
 {
-	//static std::vector<double> numbIteration;
-	//static std::vector<std::vector<double>> errors;
+	// static std::vector<double> numbIteration;
+	// static std::vector<std::vector<double>> errors;
 
 	static std::vector<std::vector<double>> parameters;
 	static std::vector<NumericStorm::Fitting::Data> timeline;
-
 
 	using namespace NumericStorm::Fitting;
 	/*
@@ -55,15 +54,14 @@ namespace UI::Data::JunctionFitMasterUI
 
 		*/
 
-
-	void utils::generateVectorAtGivenRanges(std::vector<double>& destination, double min, double max, double step)
+	void utils::generateVectorAtGivenRanges(std::vector<double> &destination, double min, double max, double step)
 	{
 		int size = static_cast<int>((max - min) / step) + 1;
 		destination.resize(size);
 
 		int count = -1;
 		std::ranges::generate(destination.begin(), destination.end(), [&]()
-			{ count++; return min + count * step; });
+							  { count++; return min + count * step; });
 	};
 
 	void FittingTesting::DrawPlotData()
@@ -77,19 +75,19 @@ namespace UI::Data::JunctionFitMasterUI
 	void FittingTesting::drawLegend()
 	{
 		if (ImGui::Button("Select All"))
-			for (auto& item : m_characteristics)
+			for (auto &item : m_characteristics)
 				item.selected = true;
 		ImGui::SameLine();
 		if (ImGui::Button("UnSelect All"))
 		{
-			for (auto& item : m_characteristics)
+			for (auto &item : m_characteristics)
 				item.selected = false;
 			characteristicIndex = -1;
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("SetActive Characteristic"))
 		{
-			for (auto const& [index, item] : std::views::enumerate(m_characteristics))
+			for (auto const &[index, item] : std::views::enumerate(m_characteristics))
 				if (item)
 					characteristicIndex = index;
 		}
@@ -102,14 +100,14 @@ namespace UI::Data::JunctionFitMasterUI
 		if (ImGui::Button("Remove Selected"))
 		{
 			std::vector<Characteristic> tmp;
-			for (auto& item : m_characteristics)
+			for (auto &item : m_characteristics)
 				if (!item)
 					tmp.push_back(item);
 
 			characteristicIndex = -1;
 			m_characteristics.clear();
 
-			for (auto& item : tmp)
+			for (auto &item : tmp)
 				m_characteristics.push_back(item);
 		}
 
@@ -120,7 +118,7 @@ namespace UI::Data::JunctionFitMasterUI
 			ImGui::TableSetupColumn("Name");
 			ImGui::TableHeadersRow();
 			int i = 0;
-			for (auto& item : m_characteristics)
+			for (auto &item : m_characteristics)
 			{
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
@@ -135,12 +133,12 @@ namespace UI::Data::JunctionFitMasterUI
 	{
 		ImGui::Begin("plotControls");
 
-		ImGui::CheckboxFlags("Fit Plotting Area", (unsigned int*)&plotSettings.plotBaseFlags, ImPlotAxisFlags_AutoFit);
+		ImGui::CheckboxFlags("Fit Plotting Area", (unsigned int *)&plotSettings.plotBaseFlags, ImPlotAxisFlags_AutoFit);
 		ImGui::PushItemWidth(50);
 		ImGui::SameLine();
 		if (ImGui::Button("Sort"))
-			std::sort(m_characteristics.begin(), m_characteristics.end(), [](Characteristic& lhs, Characteristic& rhs)
-				{ return lhs.getTemperature() < rhs.getTemperature(); });
+			std::sort(m_characteristics.begin(), m_characteristics.end(), [](Characteristic &lhs, Characteristic &rhs)
+					  { return lhs.getTemperature() < rhs.getTemperature(); });
 		ImGui::SameLine();
 		if (ImGui::Button("Reverse"))
 			std::reverse(m_characteristics.begin(), m_characteristics.end());
@@ -170,16 +168,16 @@ namespace UI::Data::JunctionFitMasterUI
 			PrintResults();
 		ImGui::SameLine();
 		ImGui::Checkbox("ranged Bounds", &useRangedBounds);
-		float min{ 0.001 }, max{ 5 }, step{ 0.01 };
+		float min{0.001}, max{5}, step{0.01};
 
 		if (characteristicIndex != -1)
 		{
 			Characteristic::ReturningType returningType = Characteristic::ReturningType::Voltage;
-			Characteristic& item = m_characteristics[characteristicIndex];
+			Characteristic &item = m_characteristics[characteristicIndex];
 			ImGui::Checkbox("plot ranged", &item.plotRanged);
 
-			int& lowerSlider = (int&)item.lowerIndex;
-			int& upperSlider = (int&)item.upperIndex;
+			int &lowerSlider = (int &)item.lowerIndex;
+			int &upperSlider = (int &)item.upperIndex;
 
 			int min, max, step;
 			min = 0;
@@ -239,10 +237,10 @@ namespace UI::Data::JunctionFitMasterUI
 	}
 	void Characteristic::updateRangedCharacteristic()
 	{
-		for (const int& item : std::ranges::iota_view(0, 3))
+		for (const int &item : std::ranges::iota_view(0, 3))
 			rangedData.get(utils::cast<ReturningType>(item)) = std::vector<double>{
 				originalData.get(utils::cast<ReturningType>(item)).begin() + lowerIndex,
-				originalData.get(utils::cast<ReturningType>(item)).begin() + upperIndex };
+				originalData.get(utils::cast<ReturningType>(item)).begin() + upperIndex};
 	};
 
 	void FittingTesting::plottingCharacteristics()
@@ -252,10 +250,10 @@ namespace UI::Data::JunctionFitMasterUI
 		plotSettings.plot_size = plot_size;
 		if (ImPlot::BeginPlot("characteristic", plotSettings.plot_size, plotSettings.plotBaseFlags))
 		{
-			auto transformForwardLinear = [](double v, void*)
-				{ return std::log(std::abs(v)); };
-			auto transformForwardNaturalLog = [](double v, void*)
-				{ return std::exp(v); };
+			auto transformForwardLinear = [](double v, void *)
+			{ return std::log(std::abs(v)); };
+			auto transformForwardNaturalLog = [](double v, void *)
+			{ return std::exp(v); };
 
 			ImPlot::SetupAxes("V", "I", plotSettings.plotBaseFlags, plotSettings.plotBaseFlags);
 
@@ -263,16 +261,16 @@ namespace UI::Data::JunctionFitMasterUI
 				ImPlot::SetupAxisScale(ImAxis_X1, transformForwardLinear, transformForwardNaturalLog);
 			if (plotSettings.yLog)
 				ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
-			for (auto& item : m_characteristics)
+			for (auto &item : m_characteristics)
 				if (item)
 					plotOneCharacteristic(item, false, false);
 			if (characteristicIndex != -1)
 			{
 				Characteristic::ReturningType returningType = Characteristic::ReturningType::Voltage;
-				Characteristic& item = m_characteristics[characteristicIndex];
+				Characteristic &item = m_characteristics[characteristicIndex];
 
-				int& lowerSlider = (int&)item.lowerIndex;
-				int& upperSlider = (int&)item.upperIndex;
+				int &lowerSlider = (int &)item.lowerIndex;
+				int &upperSlider = (int &)item.upperIndex;
 
 				ImPlot::PlotInfLines("Lower bound", &item.get(returningType)[lowerSlider], 1);
 				ImPlot::PlotInfLines("Upper bound", &item.get(returningType)[upperSlider - 1], 1);
@@ -281,7 +279,7 @@ namespace UI::Data::JunctionFitMasterUI
 		}
 		ImGui::End();
 	};
-	void FittingTesting::plotOneCharacteristic(Characteristic& item, bool logy, bool logx)
+	void FittingTesting::plotOneCharacteristic(Characteristic &item, bool logy, bool logx)
 	{
 		using ReturningType = JFMData::ReturningType;
 		auto V = logx ? item.getLog(ReturningType::Voltage, false) : item.get(ReturningType::Voltage, false);
@@ -304,7 +302,7 @@ namespace UI::Data::JunctionFitMasterUI
 	void FittingTesting::DrawActionsPanel()
 	{
 
-		//ImGui::PushItemWidth(200);
+		// ImGui::PushItemWidth(200);
 		if (ImGui::Button("Load Data"))
 			m_openedContentBrowserData = true;
 
@@ -328,13 +326,13 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::InputInt("iterations per fit", &itersPerFit);
 		ImGui::Begin("plotting the error");
 
-		//ImGui::Begin("Iteration vs error for each point");
-		if (ImPlot::BeginPlot("error progression", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }))
+		// ImGui::Begin("Iteration vs error for each point");
+		if (ImPlot::BeginPlot("error progression", {ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y}))
 		{
-			auto transformForwardLinear = [](double v, void*)
-				{ return std::log(std::abs(v)); };
-			auto transformForwardNaturalLog = [](double v, void*)
-				{ return std::exp(v); };
+			auto transformForwardLinear = [](double v, void *)
+			{ return std::log(std::abs(v)); };
+			auto transformForwardNaturalLog = [](double v, void *)
+			{ return std::exp(v); };
 
 			ImPlot::SetupAxes("n", "E", plotSettings.plotBaseFlags, plotSettings.plotBaseFlags);
 
@@ -344,11 +342,11 @@ namespace UI::Data::JunctionFitMasterUI
 				ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
 			if (numbIteration.size() != 0)
 			{
-				ImPlot::PlotLine("error", (double*)numbIteration.data(), errors.data(), n);
-				ImPlot::PlotLine("As", (double*)numbIteration.data(), As.data(), n);
-				ImPlot::PlotLine("I0s", (double*)numbIteration.data(), I0s.data(), n);
-				ImPlot::PlotLine("Rss", (double*)numbIteration.data(), Rss.data(), n);
-				ImPlot::PlotLine("Rps", (double*)numbIteration.data(), Rps.data(), n);
+				ImPlot::PlotLine("error", (double *)numbIteration.data(), errors.data(), n);
+				ImPlot::PlotLine("As", (double *)numbIteration.data(), As.data(), n);
+				ImPlot::PlotLine("I0s", (double *)numbIteration.data(), I0s.data(), n);
+				ImPlot::PlotLine("Rss", (double *)numbIteration.data(), Rss.data(), n);
+				ImPlot::PlotLine("Rps", (double *)numbIteration.data(), Rps.data(), n);
 			}
 			ImPlot::EndPlot();
 		}
@@ -358,12 +356,12 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::Begin("Characteristic evolution");
 		if (numbIteration.size() != 0)
 		{
-			if (ImPlot::BeginPlot("plotting the error", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }))
+			if (ImPlot::BeginPlot("plotting the error", {ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y}))
 			{
-				auto transformForwardLinear = [](double v, void*)
-					{ return std::log(std::abs(v)); };
-				auto transformForwardNaturalLog = [](double v, void*)
-					{ return std::exp(v); };
+				auto transformForwardLinear = [](double v, void *)
+				{ return std::log(std::abs(v)); };
+				auto transformForwardNaturalLog = [](double v, void *)
+				{ return std::exp(v); };
 
 				ImPlot::SetupAxes("I", "V", plotSettings.plotBaseFlags, plotSettings.plotBaseFlags);
 
@@ -379,15 +377,13 @@ namespace UI::Data::JunctionFitMasterUI
 			}
 		}
 
-
-
 		if (ImGui::Button("Monte Carlo Simulation"))
 			monteCarloEngine.settings.draw = true;
 
 		ImGui::SameLine();
 		if (ImGui::Button("Plot MonteCarlo"))
 			PlotMonteCarloResults();
-		//ImGui::PopItemWidth();
+		// ImGui::PopItemWidth();
 		ImGui::End();
 
 		if (m_showSimplexSettings)
@@ -412,10 +408,9 @@ namespace UI::Data::JunctionFitMasterUI
 		if (m_showSimplexSettings)
 			SetSimplexSettings();
 
-		//ImGui::Separator();
+		// ImGui::Separator();
 	}
-	void FittingTesting::SetRange()
-	{
+	void FittingTesting::SetRange() {
 	};
 	void FittingTesting::FixRs()
 	{
@@ -439,13 +434,13 @@ namespace UI::Data::JunctionFitMasterUI
 		size_t i = 5;
 		std::reverse(originalV.begin(), originalV.end());
 		std::reverse(originalI.begin(), originalI.end());
-		std::valarray<double> V{ originalV.data(), i }, I{ originalI.data(), i };
+		std::valarray<double> V{originalV.data(), i}, I{originalI.data(), i};
 		/*for (const auto& [destination, source] : std::views::zip(V, originalV))
 			destination = source;
 		for (const auto& [destination, source] : std::views::zip(I, originalI))
 			destination = source;*/
 		auto Rs_s = V / I;
-		for (const auto& [Vs, Is, Rs] : std::views::zip(V, I, Rs_s))
+		for (const auto &[Vs, Is, Rs] : std::views::zip(V, I, Rs_s))
 			std::cout << "[Vs, Is, Rs]" << Vs << " " << Is << " " << "Vs/Is" << Vs / Is << std::endl;
 		double Rs = Rs_s.sum() / Rs_s.size();
 		std::cout << " Series resistance: " << Rs << std::endl;
@@ -454,15 +449,15 @@ namespace UI::Data::JunctionFitMasterUI
 	{
 		auto Voltage = Characteristic::ReturningType::Voltage;
 		auto Current = Characteristic::ReturningType::Current;
-		auto& originalV = m_characteristics[characteristicIndex].get(Voltage, false);
-		auto& originalI = m_characteristics[characteristicIndex].get(Current, false);
-		std::valarray<double> V{ 5 }, I{ 5 };
-		for (const auto& [destination, source] : std::views::zip(V, originalV))
+		auto &originalV = m_characteristics[characteristicIndex].get(Voltage, false);
+		auto &originalI = m_characteristics[characteristicIndex].get(Current, false);
+		std::valarray<double> V{5}, I{5};
+		for (const auto &[destination, source] : std::views::zip(V, originalV))
 			destination = source;
-		for (const auto& [destination, source] : std::views::zip(I, originalI))
+		for (const auto &[destination, source] : std::views::zip(I, originalI))
 			destination = source;
 		auto Rp_s = V / I;
-		for (const auto& [i, item] : std::views::enumerate(Rp_s))
+		for (const auto &[i, item] : std::views::enumerate(Rp_s))
 			std::cout << i << ": " << item << std::endl;
 		double Rp = Rp_s.sum() / Rp_s.size();
 		std::cout << " Parallel resistance: " << Rp << std::endl;
@@ -477,7 +472,7 @@ namespace UI::Data::JunctionFitMasterUI
 	void FittingTesting::PreFit()
 	{
 		prefit.Init(useRangedBounds, itersPerFit);
-		for (const auto& [setUp, init, characteristic] : std::views::zip(prefit.setUps, prefit.initialPoints, prefit.fittingCharacteristics))
+		for (const auto &[setUp, init, characteristic] : std::views::zip(prefit.setUps, prefit.initialPoints, prefit.fittingCharacteristics))
 		{
 			prefit.futureResults.push_back(std::async(std::launch::async, PreFit::runOneFit, &prefit.results, &setUp, &init, &characteristic));
 		}
@@ -497,7 +492,7 @@ namespace UI::Data::JunctionFitMasterUI
 		// 	}
 		// 	std::cout << std::endl;
 		// }
-		for (auto& item : characteristics)
+		for (auto &item : characteristics)
 			m_characteristics.push_back(item);
 		done = 0;
 		std::cout << "\n\n";
@@ -512,12 +507,12 @@ namespace UI::Data::JunctionFitMasterUI
 		utils::generateVectorAtGivenRanges(V, 0.01, 3, 0.001);
 		utils::generateVectorAtGivenRanges(I, 0.01, 3, 0.001);
 
-		Parameters<4> testParameters({ 1, 5e-8, 5e-3, 5e5 });
+		Parameters<4> testParameters({1, 5e-8, 5e-3, 5e5});
 		NumericStorm::Fitting::Data data(2);
 		data[0] = V;
 		data[1] = I;
 
-		IVModel()(data, testParameters, 210);
+		IVModel()(data, testParameters, 330);
 		Characteristic fittingCharacteristic;
 		fittingCharacteristic.get(Characteristic::ReturningType::Voltage) = data[0];
 		fittingCharacteristic.get(Characteristic::ReturningType::Current) = data[1];
@@ -530,20 +525,21 @@ namespace UI::Data::JunctionFitMasterUI
 		fittingCharacteristic.m_color = ImVec4(1, 0, 0, 1);
 		characteristics.push_back(fittingCharacteristic);
 		std::vector<double> I0s;
-		utils::generateVectorAtGivenRanges(I0s, -20, -3, 1);
+		utils::generateVectorAtGivenRanges(I0s, -8, -7, 1);
 
 		// for (int i=0;i<18;i++)
-		for (const auto& [i, item] : std::views::enumerate(I0s))
+		for (const auto &[i, item] : std::views::enumerate(I0s))
 		{
 			IVFittingSetup setUp;
 			setUp.maxIteration = iterationCount;
+			setUp.minError = 1e-5;
 			setUp.numberOfFits = numberOfFits;
-			setUp.simplexMin = Parameters<4>({ 0.5, 1 * std::pow(10, item), 1e-5, 10 });
-			setUp.simplexMax = Parameters<4>({ 20, 9 * std::pow(10, item), 9e2, 9e9 });
+			setUp.simplexMin = Parameters<4>({0.5, 1 * std::pow(10, item), 1e-5, 10});
+			setUp.simplexMax = Parameters<4>({20, 9 * std::pow(10, item), 9e2, 9e9});
 			if (useRangedBounds)
 			{
-				setUp.simplexMin = Parameters<4>({ 0.5, 1 * std::pow(10, item), 1e-3, 1e5 });
-				setUp.simplexMax = Parameters<4>({ 20, 9 * std::pow(10, item), 9e-3, 9e5 });
+				setUp.simplexMin = Parameters<4>({0.5, 1 * std::pow(10, item), 1e-3, 1e5});
+				setUp.simplexMax = Parameters<4>({20, 9 * std::pow(10, item), 9e-3, 9e5});
 			}
 
 			setUps.push_back(setUp);
@@ -557,9 +553,9 @@ namespace UI::Data::JunctionFitMasterUI
 		}
 	};
 
-	void PreFit::runOneFit(std::vector<PreFitResult>* results,
-		JunctionFitMasterFromNS::IVFitting::IVFittingSetup* setUp,
-		NumericStorm::Fitting::Parameters<4>* initalParams, Characteristic* item)
+	void PreFit::runOneFit(std::vector<PreFitResult> *results,
+						   JunctionFitMasterFromNS::IVFitting::IVFittingSetup *setUp,
+						   NumericStorm::Fitting::Parameters<4> *initalParams, Characteristic *item)
 	{
 
 		using namespace NumericStorm::Fitting;
@@ -586,13 +582,13 @@ namespace UI::Data::JunctionFitMasterUI
 			{
 				m_optimizer.oneStep(state);
 				internalResult.iterations.push_back(j++);
-				for (auto& item : internalResult.numberOfIterations)
+				for (auto &item : internalResult.numberOfIterations)
 					item = j;
 				std::unique_ptr<Parameters<4>> iterationParameters = std::make_unique<Parameters<4>>(state.getBestPoint().getParameters());
 				Parameters<4> iterationParameters_val = Parameters<4>(state.getBestPoint().getParameters());
-				//std::cout << "iterationParameters: " << &iterationParameters_val << std::endl;
-				std::cout << &iterationParameters_val << std::endl;
-				//std::cout << "state.getBestPoint().getParameters(): " << &state.getBestPoint().getParameters() << std::endl;
+				// std::cout << "iterationParameters: " << &iterationParameters_val << std::endl;
+				//std::cout << &iterationParameters_val << std::endl;
+				// std::cout << "state.getBestPoint().getParameters(): " << &state.getBestPoint().getParameters() << std::endl;
 				internalResult.parametersOverIterations.emplace_back(Parameters<4>(iterationParameters_val));
 				internalResult.errorOverIteration.push_back(state.getBestPoint().getError());
 				Characteristic characteristicToPush;
@@ -600,23 +596,21 @@ namespace UI::Data::JunctionFitMasterUI
 				characteristicToPush.get(Characteristic::ReturningType::Current) = state.getBestPoint().getData()[1];
 				characteristicToPush.name = "fit: " + std::to_string(i) + " iteration: " + std::to_string(j);
 				internalResult.characteristicsOverIterations.push_back(characteristicToPush);
-				//delete internalResult;
+				// delete internalResult;
 			}
-			for (const auto& [dest, src] : std::views::zip(initialPoint.getParameters(), state.getBestPoint().getParameters()))
+			for (const auto &[dest, src] : std::views::zip(initialPoint.getParameters(), state.getBestPoint().getParameters()))
 				dest = src;
 		}
 
-
-
 		//!
 		using namespace NumericStorm::Fitting;
-		auto printParams = [](const Parameters<4> params)
-			{
-				std::vector<std::string> names{ "A", "I0", "Rs", "Rp" };
-				for (const auto& [name, item] : std::views::zip(names, params.getParameters()))
-					std::cout << name << " " << std::scientific << std::setprecision(2) << item << " ";
-				std::cout << "\n";
-			};
+		// auto printParams = [](const Parameters<4> params)
+		// 	{
+		// 		std::vector<std::string> names{ "A", "I0", "Rs", "Rp" };
+		// 		for (const auto& [name, item] : std::views::zip(names, params.getParameters()))
+		// 			std::cout << name << " " << std::scientific << std::setprecision(2) << item << " ";
+		// 		std::cout << "\n";
+		// 	};
 		std::lock_guard<std::mutex> lock(Mutex);
 		results->push_back(internalResult);
 		Characteristic toPush(*item);
@@ -643,81 +637,81 @@ namespace UI::Data::JunctionFitMasterUI
 		// results->push_back(initialPoint);
 	};
 
-	void FittingTesting::CharacteristicInspector(ParametersID ID, const PreFitResult& prefitResult)
+	void FittingTesting::CharacteristicInspector(ParametersID ID, const PreFitResult &prefitResult)
 	{
 		int numberOfIterations = prefitResult.iterations.size() - 1;
 		ImGui::Begin("Characteristic Inspector");
-		std::vector<std::string> names{ "A: ", "I0: ", "Rs: ", "Rp: " };
-		auto formatText = [](const std::string& name, double item)
-			{
-				std::ostringstream value;
-				value << std::scientific << std::setprecision(2) << item;
-				return name + value.str();
-			};
+		std::vector<std::string> names{"A: ", "I0: ", "Rs: ", "Rp: "};
+		auto formatText = [](const std::string &name, double item)
+		{
+			std::ostringstream value;
+			value << std::scientific << std::setprecision(2) << item;
+			return name + value.str();
+		};
 		ImGui::Separator();
 		ImGui::Text("Initial Parameters");
-		for (const auto& [name, item] : std::views::zip(names, prefitResult.initialParameters))
+		for (const auto &[name, item] : std::views::zip(names, prefitResult.initialParameters))
 			ImGui::Text(formatText(name, item).c_str());
 
 		ImGui::Separator();
 		ImGui::Text("Found Parameters");
-		for (const auto& [name, item] : std::views::zip(names, prefitResult.parametersOverIterations[numberOfIterations]))
+		for (const auto &[name, item] : std::views::zip(names, prefitResult.parametersOverIterations[numberOfIterations]))
 			ImGui::Text(formatText(name, item).c_str());
 		ImGui::Text(("Error: " + std::to_string(prefitResult.errorOverIteration[numberOfIterations])).c_str());
 
 		ImGui::End();
 	}
-	void FittingTesting::showParameterOverTime(std::vector<PreFitResult>& toInspect, const ParametersID& ID)
+	void FittingTesting::showParameterOverTime(std::vector<PreFitResult> &toInspect, const ParametersID &ID)
 	{
 		static bool xLog = false, yLog = false;
-		auto mapIDToString = [](const ParametersID& ID)
+		auto mapIDToString = [](const ParametersID &ID)
+		{
+			switch (ID)
 			{
-				switch (ID)
-				{
-				case ParametersID::A:
-					return "A";
-				case ParametersID::I0:
-					return "I0";
-				case ParametersID::Rs:
-					return "Rs";
-				case ParametersID::Rp:
-					return "Rp";
-				case ParametersID::Error:
-					return "Error";
-				case ParametersID::Characteristic:
-					return "Characteristic";
-				default:
-					return "";
-				}
+			case ParametersID::A:
+				return "A";
+			case ParametersID::I0:
+				return "I0";
+			case ParametersID::Rs:
+				return "Rs";
+			case ParametersID::Rp:
+				return "Rp";
+			case ParametersID::Error:
+				return "Error";
+			case ParametersID::Characteristic:
+				return "Characteristic";
+			default:
+				return "";
+			}
+		};
+		auto mapToData = [&](const ParametersID &ID, const PreFitResult &result)
+		{
+			using namespace NumericStorm::Fitting;
+			auto getItem = [&](const Parameters<4> &parameters, ParametersID ID)
+			{
+				return parameters[utils::cast(ID)];
 			};
-		auto mapToData = [&](const ParametersID& ID, const PreFitResult& result)
+			std::vector<double> toReturn;
+			int size = result.numberOfIterations[utils::cast(ID)] - 1;
+			toReturn.resize(size);
+			switch (ID)
 			{
-				using namespace NumericStorm::Fitting;
-				auto getItem = [&](const Parameters<4>& parameters, ParametersID ID)
-					{
-						return parameters[utils::cast(ID)];
-					};
-				std::vector<double> toReturn;
-				int size = result.numberOfIterations[utils::cast(ID)] - 1;
-				toReturn.resize(size);
-				switch (ID)
-				{
-				case ParametersID::A:
-				case ParametersID::I0:
-				case ParametersID::Rs:
-				case ParametersID::Rp:
+			case ParametersID::A:
+			case ParametersID::I0:
+			case ParametersID::Rs:
+			case ParametersID::Rp:
 
-					std::transform(result.parametersOverIterations.begin(), result.parametersOverIterations.begin() + size, toReturn.begin(),
-						[&](const Parameters<4>& params)
-						{ return getItem(params, ID); });
-					break;
-				case ParametersID::Error:
-					return result.errorOverIteration;
-				default:
-					break;
-				};
-				return toReturn;
+				std::transform(result.parametersOverIterations.begin(), result.parametersOverIterations.begin() + size, toReturn.begin(),
+							   [&](const Parameters<4> &params)
+							   { return getItem(params, ID); });
+				break;
+			case ParametersID::Error:
+				return result.errorOverIteration;
+			default:
+				break;
 			};
+			return toReturn;
+		};
 
 		std::string name = mapIDToString(ID);
 		ImGui::Begin((name + " over time").c_str());
@@ -733,14 +727,14 @@ namespace UI::Data::JunctionFitMasterUI
 		toInspect[0].setYlog(static_cast<int>(ID), ylog);
 
 		static int maxSize = toInspect[0].iterations.size();
-		int* itNumber = (int*)&toInspect[0].numberOfIterations[static_cast<int>(ID)];
+		int *itNumber = (int *)&toInspect[0].numberOfIterations[static_cast<int>(ID)];
 		std::vector<double> x, y;
 		// for (const auto &item : toInspect)
 		// {
 		// }
 		if (ImGui::SliderInt("number of Iteration", itNumber, 1, maxSize))
 		{
-			for (const auto& item : toInspect)
+			for (const auto &item : toInspect)
 			{
 				x = item.iterations;
 				y = mapToData(ID, item);
@@ -750,10 +744,10 @@ namespace UI::Data::JunctionFitMasterUI
 		ImVec2 plot_size(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
 		if (ImPlot::BeginPlot((name + " plot" + " over time").c_str(), plot_size, ImPlotAxisFlags_None))
 		{
-			auto transformForwardLinear = [](double v, void*)
-				{ return std::log(std::abs(v)); };
-			auto transformForwardNaturalLog = [](double v, void*)
-				{ return std::exp(v); };
+			auto transformForwardLinear = [](double v, void *)
+			{ return std::log(std::abs(v)); };
+			auto transformForwardNaturalLog = [](double v, void *)
+			{ return std::exp(v); };
 
 			ImPlot::SetupAxes("V", "I", ImPlotAxisFlags_None);
 
@@ -761,7 +755,7 @@ namespace UI::Data::JunctionFitMasterUI
 				ImPlot::SetupAxisScale(ImAxis_X1, transformForwardLinear, transformForwardNaturalLog);
 			if (yLog)
 				ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
-			for (auto& item : toInspect)
+			for (auto &item : toInspect)
 			{
 				if (item)
 				{
@@ -778,17 +772,17 @@ namespace UI::Data::JunctionFitMasterUI
 			showWindowsOverTime[utils::cast(ID)] = false;
 		ImGui::End();
 	};
-	void FittingTesting::ShowWindowOverTime(std::vector<PreFitResult>& result)
+	void FittingTesting::ShowWindowOverTime(std::vector<PreFitResult> &result)
 	{
 		showWindowOverTime = true;
 		std::vector<std::string>
-			names{ "A: ", "I0: ", "Rs: ", "Rp: ", "Error" };
+			names{"A: ", "I0: ", "Rs: ", "Rp: ", "Error"};
 
 		ImGui::Begin("Show over iterations");
 		using namespace utils;
 		using IDs = ParametersID;
 
-		for (const auto& [name, ID, open] : std::views::zip(names, std::ranges::iota_view(cast(IDs::A), cast(IDs::Characteristic)), showWindowsOverTime))
+		for (const auto &[name, ID, open] : std::views::zip(names, std::ranges::iota_view(cast(IDs::A), cast(IDs::Characteristic)), showWindowsOverTime))
 		{
 			auto NewName = name + "over time";
 			if (ImGui::Button(NewName.c_str()) || open)
@@ -798,7 +792,7 @@ namespace UI::Data::JunctionFitMasterUI
 				{
 					showParameterOverTime(result, cast<IDs>(ID));
 				}
-				catch (std::exception& e)
+				catch (std::exception &e)
 				{
 				}
 			}
@@ -811,13 +805,13 @@ namespace UI::Data::JunctionFitMasterUI
 
 		if (ImGui::Button("Select all prefit"))
 		{
-			for (auto& item : result)
+			for (auto &item : result)
 				item.enable = true;
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("UnSelect all prefit"))
 		{
-			for (auto& item : result)
+			for (auto &item : result)
 				item.enable = false;
 			// done = 0;
 		}
@@ -825,7 +819,7 @@ namespace UI::Data::JunctionFitMasterUI
 		if (ImGui::Button("Remove Selected prefit"))
 		{
 			std::vector<PreFitResult> tmp;
-			for (auto& item : result)
+			for (auto &item : result)
 			{
 				if (!item)
 					tmp.push_back(item);
@@ -836,7 +830,7 @@ namespace UI::Data::JunctionFitMasterUI
 		if (ImGui::Button("Remove not Selected prefit"))
 		{
 			std::vector<PreFitResult> tmp;
-			for (auto& item : result)
+			for (auto &item : result)
 			{
 				if (item)
 					tmp.push_back(item);
@@ -847,7 +841,7 @@ namespace UI::Data::JunctionFitMasterUI
 		{
 			ImGui::TableSetupColumn("Checked");
 			ImGui::TableSetupColumn("Name");
-			for (auto& item : names)
+			for (auto &item : names)
 				ImGui::TableSetupColumn(item.c_str());
 			ImGui::TableSetupColumn("Error");
 			ImGui::TableHeadersRow();
@@ -855,13 +849,13 @@ namespace UI::Data::JunctionFitMasterUI
 			{
 				try
 				{
-					for (auto& item : result)
+					for (auto &item : result)
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
 						ImGui::Checkbox(item.name.c_str(), &item.enable);
 						ImGui::TableNextColumn();
-						for (auto& value : item.initialParameters.getParameters())
+						for (auto &value : item.initialParameters.getParameters())
 						{
 							ImGui::Text(std::to_string(value).c_str());
 							ImGui::TableNextColumn();
@@ -869,7 +863,7 @@ namespace UI::Data::JunctionFitMasterUI
 						ImGui::Text(std::to_string(*(item.errorOverIteration.end() - 1)).c_str());
 					}
 				}
-				catch (std::exception& e)
+				catch (std::exception &e)
 				{
 				}
 			}
@@ -889,7 +883,7 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::SameLine();
 		if (ImGui::Button("Transfer Read data to Plot"))
 		{
-			for (auto& item : contentBrowserData.characteristics)
+			for (auto &item : contentBrowserData.characteristics)
 			{
 				if (!checkExistence(m_characteristics, item.name))
 					m_characteristics.push_back(item);
@@ -901,9 +895,9 @@ namespace UI::Data::JunctionFitMasterUI
 			if (ImGui::Button("<-"))
 				contentBrowserData.currentPath = contentBrowserData.currentPath.parent_path();
 		}
-		for (auto& directoryEntry : std::filesystem::directory_iterator(contentBrowserData.currentPath))
+		for (auto &directoryEntry : std::filesystem::directory_iterator(contentBrowserData.currentPath))
 		{
-			const auto& path = directoryEntry.path();
+			const auto &path = directoryEntry.path();
 			auto relativePath = std::filesystem::relative(path, contentBrowserData.rootPath);
 			std::string fileNameString = relativePath.filename().string();
 			if (directoryEntry.is_directory())
@@ -924,11 +918,11 @@ namespace UI::Data::JunctionFitMasterUI
 	}
 
 	void
-		FittingTesting::readAllDataFromDirectory(const std::filesystem::path& rootPath, const std::filesystem::path& currentPath)
+	FittingTesting::readAllDataFromDirectory(const std::filesystem::path &rootPath, const std::filesystem::path &currentPath)
 	{
-		for (auto& directoryEntry : std::filesystem::directory_iterator(currentPath))
+		for (auto &directoryEntry : std::filesystem::directory_iterator(currentPath))
 		{
-			const auto& path = directoryEntry.path();
+			const auto &path = directoryEntry.path();
 			auto relativePath = std::filesystem::relative(path, rootPath);
 			std::string fileNameString = relativePath.filename().string();
 			if (directoryEntry.is_directory())
@@ -937,18 +931,18 @@ namespace UI::Data::JunctionFitMasterUI
 				contentBrowserData.readCharacteristic(path);
 		}
 	};
-	bool JunctionFitMasterUI::checkExistence(const std::vector<Characteristic>& destination, const std::string& item)
+	bool JunctionFitMasterUI::checkExistence(const std::vector<Characteristic> &destination, const std::string &item)
 	{
 		auto found = std::find_if(destination.begin(), destination.end(),
-			[&item](const Characteristic& element)
-			{
-				return element.name == item;
-			});
+								  [&item](const Characteristic &element)
+								  {
+									  return element.name == item;
+								  });
 		bool f = found != destination.end();
 		return f;
 	}
 
-	void ContentBrowserData::readCharacteristic(const std::filesystem::path& path)
+	void ContentBrowserData::readCharacteristic(const std::filesystem::path &path)
 	{
 		Characteristic characteristic(path);
 		if (!checkExistence(characteristics, characteristic.name))
@@ -972,13 +966,13 @@ namespace UI::Data::JunctionFitMasterUI
 			readCharacteristic = createJSONObject(pathString);
 			from_json(readCharacteristic, *this);
 		}
-		catch (const std::exception& e)
+		catch (const std::exception &e)
 		{
 		}
 	}
-	json Characteristic::createJSONObject(std::string& path)
+	json Characteristic::createJSONObject(std::string &path)
 	{
-		const char* fileName = path.c_str();
+		const char *fileName = path.c_str();
 		std::ifstream file(fileName);
 		std::string jsonString;
 		std::string line;
@@ -987,25 +981,25 @@ namespace UI::Data::JunctionFitMasterUI
 		return json::parse(jsonString, nullptr, false);
 	};
 
-	void Characteristic::to_json(json& j, Characteristic characteristic)
+	void Characteristic::to_json(json &j, Characteristic characteristic)
 	{
-		j = json{ {"voltage", characteristic.get(ReturningType::Voltage)}, {"current", characteristic.originalData.get(ReturningType::Current)}, {"density current", characteristic.get(ReturningType::DensityCurrent)} };
+		j = json{{"voltage", characteristic.get(ReturningType::Voltage)}, {"current", characteristic.originalData.get(ReturningType::Current)}, {"density current", characteristic.get(ReturningType::DensityCurrent)}};
 	};
-	void Characteristic::from_json(const json& j, Characteristic& iv)
+	void Characteristic::from_json(const json &j, Characteristic &iv)
 	{
-		auto strToDouble = [](const std::string& str)
-			{ return std::stod(str); };
-		auto transform = [&](const std::vector<std::string>& str, std::vector<double>& vec)
-			{
-				std::transform(str.begin(), str.end(), vec.begin(), strToDouble);
-			};
+		auto strToDouble = [](const std::string &str)
+		{ return std::stod(str); };
+		auto transform = [&](const std::vector<std::string> &str, std::vector<double> &vec)
+		{
+			std::transform(str.begin(), str.end(), vec.begin(), strToDouble);
+		};
 		iv.resize(j.at("voltage").size());
 
 		transform(j.at("voltage"), iv.get(ReturningType::Voltage));
 		transform(j.at("current"), iv.get(ReturningType::Current));
 		transform(j.at("density current"), iv.get(ReturningType::DensityCurrent));
 	};
-	double Characteristic::read_temperature(std::string& path)
+	double Characteristic::read_temperature(std::string &path)
 	{
 
 		std::stringstream ss(m_path.string());
@@ -1015,7 +1009,7 @@ namespace UI::Data::JunctionFitMasterUI
 		while (std::getline(ss, token, delimiter))
 			slices.push_back(token);
 
-		for (const auto& item : slices)
+		for (const auto &item : slices)
 		{
 			if (item[0] == 'T')
 				return std::stod(item.substr(1));
@@ -1029,22 +1023,22 @@ namespace UI::Data::JunctionFitMasterUI
 		m_openGenerateData = true;
 		int id = 0;
 		ImGui::Separator();
-		static float voltages[3]{ 0.0f, 10.0f, 0.1 }; // min - max - step
+		static float voltages[3]{0.0f, 10.0f, 0.1}; // min - max - step
 		ImGui::Text("Voltages");
 		ImGui::SameLine();
 		ImGui::PushID(1);
-		if (ImGui::DragFloat3("##Voltages", (float*)&voltages, 0.1, 0.00001, 4, "%.5f"))
+		if (ImGui::DragFloat3("##Voltages", (float *)&voltages, 0.1, 0.00001, 4, "%.5f"))
 			utils::generateVectorAtGivenRanges(generatingData.Voltages, voltages[0], voltages[1], voltages[2]);
 		ImGui::PopID();
 		ImGui::PushItemWidth(200);
-		for (const char* item : { "name", "min", "max", "step", "value" })
+		for (const char *item : {"name", "min", "max", "step", "value"})
 		{
 			ImGui::Text(item);
 			ImGui::SameLine();
 		}
 		ImGui::NewLine();
 		ImGui::PopItemWidth();
-		for (const auto& [description, destination, i] : std::views::zip(generatingData.names, generatingData.params, std::ranges::iota_view(0, 5)))
+		for (const auto &[description, destination, i] : std::views::zip(generatingData.names, generatingData.params, std::ranges::iota_view(0, 5)))
 			DrawSingleRangeGenerationOption(description, destination, i, id);
 
 		if (ImGui::Button("Single Shot"))
@@ -1058,12 +1052,12 @@ namespace UI::Data::JunctionFitMasterUI
 		if (ImGui::Button("Close"))
 			m_openGenerateData = false;
 	};
-	void FittingTesting::DrawSingleRangeGenerationOption(const std::string& name, Params<3>& destination, const int& i, int& ID)
+	void FittingTesting::DrawSingleRangeGenerationOption(const std::string &name, Params<3> &destination, const int &i, int &ID)
 	{
 		std::string itemBaseName = name + std::to_string(i);
 		ImGui::PushID(itemBaseName.c_str());
 
-		ImGui::RadioButton(name.c_str(), (int*)&generatingData.option, i);
+		ImGui::RadioButton(name.c_str(), (int *)&generatingData.option, i);
 		ImGui::SameLine();
 
 		ImGui::PopID();
@@ -1074,7 +1068,7 @@ namespace UI::Data::JunctionFitMasterUI
 		if (generatingData.option != utils::cast<ParametersNames>(i))
 			ImGui::BeginDisabled();
 		ImGui::PushID((itemBaseName + "1").c_str());
-		ImGui::DragFloat3("##DragFloat3", (float*)&destination.items, 0.1, 0.0f, 0.0f, "%.3f", flags);
+		ImGui::DragFloat3("##DragFloat3", (float *)&destination.items, 0.1, 0.0f, 0.0f, "%.3f", flags);
 		ImGui::PopID();
 		if (generatingData.option != utils::cast<ParametersNames>(i))
 			ImGui::EndDisabled();
@@ -1101,40 +1095,40 @@ namespace UI::Data::JunctionFitMasterUI
 
 		utils::generateVectorAtGivenRanges(steps, parameters[names::min], parameters[names::max], parameters[names::step]);
 		FourParameters params;
-		for (const auto& name : std::ranges::iota_view(0, 4))
+		for (const auto &name : std::ranges::iota_view(0, 4))
 			params[utils::cast<ParametersNames>(name)] = generatingData.params[utils::cast(name)].value;
 
 		std::vector<FourParameters> finalParameters(steps.size(), params);
-		for (const auto& [destination, item] : std::views::zip(finalParameters, steps))
+		for (const auto &[destination, item] : std::views::zip(finalParameters, steps))
 			destination[choosen] = item;
 
 		Characteristic referenceToCopy;
 		referenceToCopy.setAll(generatingData.Voltages);
-		std::vector<Characteristic> characteristics{ counts, referenceToCopy };
-		for (const auto& [name, item] : std::views::zip(steps, characteristics))
+		std::vector<Characteristic> characteristics{counts, referenceToCopy};
+		for (const auto &[name, item] : std::views::zip(steps, characteristics))
 			item.name = std::to_string(name);
-		for (const auto& [characteristic, parameters] : std::views::zip(characteristics, finalParameters))
+		for (const auto &[characteristic, parameters] : std::views::zip(characteristics, finalParameters))
 			generate(characteristic, parameters);
 	};
 	void FittingTesting::SingleShot()
 	{
 		FourParameters parameters;
-		std::vector<double> p{ 1, 5e-8, 5e-6, 5e5 };
-		for (const auto& [name, item] : std::views::zip(std::ranges::iota_view(0, 4), p))
+		std::vector<double> p{1, 5e-8, 5e-6, 5e5};
+		for (const auto &[name, item] : std::views::zip(std::ranges::iota_view(0, 4), p))
 		{
 			// parameters[utils::cast<ParametersNames>(name)] = item;
 			parameters[static_cast<ParametersNames>(name)] = generatingData.params[utils::cast(name)].value;
 		}
-		//parameters.Temperature = init_data.true_data.T;
+		// parameters.Temperature = init_data.true_data.T;
 
-		//parameters.parameters = init_data.true_data.parameters;
+		// parameters.parameters = init_data.true_data.parameters;
 
 		Characteristic characteristic;
 		characteristic.parameters = parameters;
 		characteristic.setAll(generatingData.Voltages);
 		generate(characteristic, parameters);
 	};
-	void FittingTesting::generate(Characteristic& characteristic, const FourParameters& parameters)
+	void FittingTesting::generate(Characteristic &characteristic, const FourParameters &parameters)
 	{
 		using namespace JunctionFitMasterFromNS::IVFitting;
 		IVModel()(characteristic.originalData, parameters.parameters, parameters.Temperature);
@@ -1201,9 +1195,9 @@ namespace UI::Data::JunctionFitMasterUI
 		*/
 
 		using namespace JunctionFitMasterFromNS::IVFitting;
-		//IVFittingSetup setUp;
-		//Parameters<4> initialPoint = init_data.simplex_init.initialGuess;
-		//NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
+		// IVFittingSetup setUp;
+		// Parameters<4> initialPoint = init_data.simplex_init.initialGuess;
+		// NumericStorm::Fitting::Data data = m_characteristics[0].rangedData;
 
 		//	// todo move to prepare fitting procedure
 		/*
@@ -1214,7 +1208,7 @@ namespace UI::Data::JunctionFitMasterUI
 			max[i] = item.items[1];
 		}
 		*/
-		Parameters<4> testParameters({ 1, 5e-8, 5e-3, 5e5 });
+		Parameters<4> testParameters({1, 5e-8, 5e-3, 5e5});
 		NumericStorm::Fitting::Data data(2);
 		data[0] = V;
 		data[1] = I;
@@ -1229,8 +1223,8 @@ namespace UI::Data::JunctionFitMasterUI
 			initialPoint[i] = item.value;*/
 
 		IVFittingSetup setUp;
-		setUp.simplexMin = Parameters<4>({ 0.5, 1e-20, 1e-5, 10 });
-		setUp.simplexMax = Parameters<4>({ 20, 1e-3, 1e-3, 1e5 });
+		setUp.simplexMin = Parameters<4>({0.5, 1e-20, 1e-5, 10});
+		setUp.simplexMax = Parameters<4>({20, 1e-3, 1e-3, 1e5});
 		setUp.maxIteration = itersPerFit;
 		Fitter<IVSimplexOptimizer<IVModel>> fitter = getFitter(setUp);
 		// std::vector<Characteristic> fittedCharacteristics;
@@ -1242,7 +1236,7 @@ namespace UI::Data::JunctionFitMasterUI
 		double T = fittingCharacteristic.getTemperature();
 		int j = 1;
 
-		Parameters<4> initialPoint({ 5, 5e-4, 7e-6, 7e7 });
+		Parameters<4> initialPoint({5, 5e-4, 7e-6, 7e7});
 		for (int i = 0; i < numberOffits; i++)
 		{
 			// auto out = fitter.fit(initialPoint, data, T);
@@ -1268,10 +1262,10 @@ namespace UI::Data::JunctionFitMasterUI
 				characteristicToPush.name = "fit: " + std::to_string(i) + " iteration: " + std::to_string(j);
 				characteristics.push_back(characteristicToPush);
 			}
-			for (const auto& [dest, src] : std::views::zip(initialPoint.getParameters(), state.getBestPoint().getParameters()))
+			for (const auto &[dest, src] : std::views::zip(initialPoint.getParameters(), state.getBestPoint().getParameters()))
 				dest = src;
 		}
-		for (const auto& item : initialPoint.getParameters())
+		for (const auto &item : initialPoint.getParameters())
 			std::cout << item << " " << std::endl;
 		std::cout << std::endl;
 		m_characteristics.push_back(characteristics[characteristics.size() - 1]);
@@ -1290,21 +1284,19 @@ namespace UI::Data::JunctionFitMasterUI
 		//	m_characteristics.push_back(item);
 	};
 
-
-
 	void FittingTesting::AutoRange()
 	{
 		ImGui::Separator();
 		autoRangeSettings.open = true;
 
 		ImGui::PushItemWidth(250);
-		for (const auto& [destination, name, ID] : std::views::zip(autoRangeSettings.bounds, autoRangeSettings.names, std::ranges::iota_view(0, 2)))
+		for (const auto &[destination, name, ID] : std::views::zip(autoRangeSettings.bounds, autoRangeSettings.names, std::ranges::iota_view(0, 2)))
 		{
 			std::string itemBaseName = name + std::to_string(ID);
 			ImGui::Text(name.c_str());
 			ImGui::SameLine();
 			ImGui::PushID((itemBaseName + "1").c_str());
-			ImGui::DragFloat3("##DragFloat3", (float*)&destination.items, 0.1, 0.0f, 0.0f, "%.3f");
+			ImGui::DragFloat3("##DragFloat3", (float *)&destination.items, 0.1, 0.0f, 0.0f, "%.3f");
 			ImGui::PopID();
 		}
 		ImGui::PopItemWidth();
@@ -1317,27 +1309,27 @@ namespace UI::Data::JunctionFitMasterUI
 			autoRangeSettings.open = false;
 	};
 
-	//void FittingTesting::Step(auto &optimizer, auto &state) {
-	//};
+	// void FittingTesting::Step(auto &optimizer, auto &state) {
+	// };
 
 	void FittingTesting::DoAutoRange()
 	{
 		std::vector<double> minRanges, maxRanges;
 
-		auto& [Minmin, Minmax, Minstep] = autoRangeSettings.bounds[0].items;
+		auto &[Minmin, Minmax, Minstep] = autoRangeSettings.bounds[0].items;
 		utils::generateVectorAtGivenRanges(minRanges, Minmin, Minmax, Minstep);
 
-		auto& [Maxmin, Maxmax, Maxstep] = autoRangeSettings.bounds[1].items;
+		auto &[Maxmin, Maxmax, Maxstep] = autoRangeSettings.bounds[1].items;
 		utils::generateVectorAtGivenRanges(maxRanges, Maxmin, Maxmax, Maxstep);
 
 		//? filtering characteristic to auto range
 		std::vector<Characteristic> characteristicToAutoRange;
-		for (auto& item : m_characteristics)
+		for (auto &item : m_characteristics)
 			if (item)
 				characteristicToAutoRange.push_back(item);
 		int i = 1;
-		std::for_each(std::execution::seq, characteristicToAutoRange.begin(), characteristicToAutoRange.end(), [&](Characteristic& item)
-			{
+		std::for_each(std::execution::seq, characteristicToAutoRange.begin(), characteristicToAutoRange.end(), [&](Characteristic &item)
+					  {
 				using namespace JunctionFitMasterFromNS::IVFitting;
 				std::vector<Characteristic> fittingResults;
 				for (auto minRange : minRanges)
@@ -1406,8 +1398,8 @@ namespace UI::Data::JunctionFitMasterUI
 	void FittingTesting::DoMonteCarloSimulation() {
 
 	};
-	void MonteCarloEngine::Simulate(const std::vector<Characteristic>& characteristic) {};
-	void MonteCarloEngine::simulate(const Characteristic& item)
+	void MonteCarloEngine::Simulate(const std::vector<Characteristic> &characteristic) {};
+	void MonteCarloEngine::simulate(const Characteristic &item)
 	{
 		using namespace NumericStorm::Fitting;
 		using namespace JunctionFitMasterFromNS::IVFitting;
@@ -1420,14 +1412,14 @@ namespace UI::Data::JunctionFitMasterUI
 	};
 	void FittingTesting::ShowMonteCarloSettings()
 	{
-		auto& settings = monteCarloEngine.settings;
+		auto &settings = monteCarloEngine.settings;
 		settings.draw = true;
 		ImGui::Separator();
 		ImGui::PushItemWidth(150);
 		ImGui::InputDouble("noise factor [%]", &settings.noiseFactor, 0.01, 0.1, "%.1f");
 		ImGui::SameLine();
 		ImGui::InputInt("Number Of Iterations", &settings.numberOfIterations, 1, 100);
-		const char* names[]{
+		const char *names[]{
 			"A",
 			"I0",
 			"Rs",
@@ -1444,15 +1436,15 @@ namespace UI::Data::JunctionFitMasterUI
 			settings.YParameter = utils::cast<ParametersNames>(utils::cast(Y));
 		ImGui::PopItemWidth();
 
-		ImGui::ColorEdit4("best color", (float*)&settings.bestErrors, settings.colorsFlags);
+		ImGui::ColorEdit4("best color", (float *)&settings.bestErrors, settings.colorsFlags);
 		ImGui::SameLine();
-		ImGui::ColorEdit4("worse color", (float*)&settings.worserErrors, settings.colorsFlags);
+		ImGui::ColorEdit4("worse color", (float *)&settings.worserErrors, settings.colorsFlags);
 		ImGui::SameLine();
-		ImGui::ColorEdit4("worst color", (float*)&settings.worstErrors, settings.colorsFlags);
+		ImGui::ColorEdit4("worst color", (float *)&settings.worstErrors, settings.colorsFlags);
 
 		if (ImGui::Button("Simulate"))
 			DoMonteCarloSimulation();
-		static char* path[128];
+		static char *path[128];
 		// if (ImGui::InputText("Path To Dump", *path, IM_ARRAYSIZE(path),128))
 		//	settings.pathToDump = std::filesystem::path(*path);
 		ImGui::SameLine();
@@ -1473,13 +1465,13 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::Separator();
 		m_showSimplexSettings = true;
 		int ID = 0;
-		std::vector<std::string> names{ "A   ", "I0  ", "Rs  ", "Rsh " };
-		for (const auto& [destination, name, ID] : std::views::zip(simplexSettings.bounds, names, std::ranges::iota_view(0, 4)))
+		std::vector<std::string> names{"A   ", "I0  ", "Rs  ", "Rsh "};
+		for (const auto &[destination, name, ID] : std::views::zip(simplexSettings.bounds, names, std::ranges::iota_view(0, 4)))
 			SimplexSettingsUI(destination, name, ID);
 		if (ImGui::Button("Close"))
 			m_showSimplexSettings = false;
 	};
-	void FittingTesting::SimplexSettingsUI(Params<2>& destination, const std::string& name, int ID)
+	void FittingTesting::SimplexSettingsUI(Params<2> &destination, const std::string &name, int ID)
 	{
 		std::string itemBaseName = name + std::to_string(ID);
 
@@ -1496,7 +1488,7 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::Text(name.c_str());
 		ImGui::SameLine();
 		ImGui::PushID((itemBaseName + "1").c_str());
-		ImGui::DragFloat2("##DragFloat3", (float*)&destination.items, 0.1, 0.0f, 0.0f, format.c_str(), flags);
+		ImGui::DragFloat2("##DragFloat3", (float *)&destination.items, 0.1, 0.0f, 0.0f, format.c_str(), flags);
 		ImGui::PopID();
 		ImGui::SameLine();
 
@@ -1510,11 +1502,11 @@ namespace UI::Data::JunctionFitMasterUI
 	{
 		ImGui::SameLine();
 
-		if (ImGui::ColorEdit4("start color", (float*)&plotSettings.startColor, plotSettings.basicPlotColorFlags))
+		if (ImGui::ColorEdit4("start color", (float *)&plotSettings.startColor, plotSettings.basicPlotColorFlags))
 			setColorsOfCharacteristics();
 
 		ImGui::SameLine();
-		if (ImGui::ColorEdit4("end color", (float*)&plotSettings.endColor, plotSettings.basicPlotColorFlags))
+		if (ImGui::ColorEdit4("end color", (float *)&plotSettings.endColor, plotSettings.basicPlotColorFlags))
 			setColorsOfCharacteristics();
 
 		ImGui::SameLine();
@@ -1525,7 +1517,7 @@ namespace UI::Data::JunctionFitMasterUI
 		ImGui::Spacing();
 		ImGui::Spacing();
 
-		ImDrawList* draw_list = ImGui::GetWindowDrawList();
+		ImDrawList *draw_list = ImGui::GetWindowDrawList();
 		ImVec2 gradient_size = ImVec2(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
 
 		ImVec2 p0 = ImGui::GetCursorScreenPos();
@@ -1544,7 +1536,7 @@ namespace UI::Data::JunctionFitMasterUI
 			ImGui::TableSetupColumn("Color");
 			ImGui::TableHeadersRow();
 
-			for (auto& item : m_characteristics)
+			for (auto &item : m_characteristics)
 			{
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
@@ -1554,7 +1546,7 @@ namespace UI::Data::JunctionFitMasterUI
 				ImGui::TableNextColumn();
 				ImGui::Text(std::to_string(item.getTemperature()).c_str());
 				ImGui::TableNextColumn();
-				ImGui::ColorEdit4(item.name.c_str(), (float*)&item.m_color, tableSettings.basicTableColorFlags);
+				ImGui::ColorEdit4(item.name.c_str(), (float *)&item.m_color, tableSettings.basicTableColorFlags);
 			}
 
 			ImGui::EndTable();
