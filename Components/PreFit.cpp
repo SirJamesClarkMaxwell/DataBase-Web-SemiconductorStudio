@@ -1,10 +1,15 @@
 #include "pch.hpp"
+#include "IVFitter.hpp"
 #include "PreFit.hpp"
 
 
 namespace JunctionFitMaster::PreFit {
 
+	using M = JunctionFitMasterFromNS::IVFitting::IVModel;
+
 	std::pair<std::vector<double>, std::vector<double>> ADerivative{};
+
+	double dV{ 0.0 };
 
 	Parameters<4> estimate(const JFMData& data, double T) {
 
@@ -86,11 +91,24 @@ namespace JunctionFitMaster::PreFit {
 				maxDerIndex = i;
 			}
 
+		size_t dVB{ maxDerIndex };
+		size_t dVE{ maxDerIndex };
+		double tol{ 0.90 };
+		while (ADerivative.second[dVB] > maxDer * tol || ADerivative.second[dVE] > maxDer * tol) {
+			if (ADerivative.second[dVB] > maxDer * tol) dVB--;
+			if (ADerivative.second[dVE] > maxDer * tol) dVE++;
+
+			if(dVB == 0 || dVE == ADerivative.second.size() - 1)
+				break;
+		}
+
+		dV = V[AStart + dVE] - V[AStart + dVB];
+
 		const double k = 8.6e-5;
 
 		double A = 1 / (k * T * maxDer);
 
-		A *= 0.85;
+		//A *= 0.85;
 
 		//log(I) = V / (A  * k * T) + log(I0)
 		//I0 = I / exp(V / (A * k * T))
@@ -104,4 +122,158 @@ namespace JunctionFitMaster::PreFit {
 
 		return result;
 	}
+
+
+	std::vector<JFMData> correlate(const std::vector<double>& voltages, Parameters<4>& true_params, double T, std::vector<double>& dVs, std::vector<double>& alphas) {
+		std::vector<double> Rs{};
+		std::vector<double> Rsch{};
+
+		dVs.clear();
+		alphas.clear();
+
+		M m{};
+
+		for (double R = 10; R <= 1e9; R *= std::sqrt(std::sqrt(10)))
+			Rsch.push_back(R);
+
+		for (double R = 1e-7; R <= 100; R *= std::sqrt(std::sqrt(10)))
+			Rs.push_back(R);
+
+		std::vector<JFMData> dataSets{};
+
+		for (double R : Rs) {
+			Parameters<4> p = true_params;
+			p[2] = R;
+			JFMData data{};
+			data[0] = voltages;
+			data[1] = voltages;
+
+			m(data, p, T);
+			dataSets.push_back(data);
+		}
+
+		for (double R : Rsch) {
+			Parameters<4> p = true_params;
+			p[3] = R;
+			JFMData data{};
+			data[0] = voltages;
+			data[1] = voltages;
+
+			m(data, p, T);
+			dataSets.push_back(data);
+		}
+
+
+		for (auto& st : dataSets) {
+			alphas.push_back(true_params[0] / estimate(st, T)[0]);
+			dVs.push_back(dV);
+		}
+
+
+		return dataSets;
+	}
+
+	JFMData filter(const JFMData& input) {
+		double sum{ 0.0 };
+
+		size_t start{ 0 };
+
+		for (const auto& [i, v] : std::views::zip(input[0], input[1]))
+			if (i < 0.0 || v < 0.0)
+				start++;
+
+		std::vector<double> logI{};
+
+		std::transform(input[1].begin() + start, input[1].end(), std::back_inserter(logI), [](double i) {return std::log(i); });
+
+		JFMData result{};
+		
+		result[0].resize(input[0].size() - start);
+		std::copy(input[0].begin() + start, input[0].end(), result[0].begin());
+		result[1].resize(input[1].size() - start);
+		const unsigned int N{ 4 };
+
+		for (size_t i = 0; i < result[1].size(); i++) {
+			sum += logI[i];
+			if (i >= N) {
+				sum -= logI[i - N];
+			}
+			result[1][i] = sum / std::min(i + 1, (size_t)N);
+		}
+
+
+		std::transform(result[1].begin(), result[1].end(), result[1].begin(), [](double i) {return std::exp(i); });
+		
+
+		auto derivate = [&](const std::vector<double>& v, const std::vector<double>& c, std::pair<std::vector<double>, std::vector<double>>& result) {
+			double der{ 0.0 };
+
+			result.first.clear();
+			result.second.clear();
+
+			for (size_t i = 0; i < c.size() - 2; i++) {
+				der = (c[i + 2] - c[i]) / (v[i + 2] - v[i]);
+				result.first.push_back(v[i + 1]);
+				result.second.push_back(der);
+			}
+			};
+
+		derivate(result[0], logI, ADerivative);
+
+		double avg{ 0.0 };
+		size_t ind{ ADerivative.second.size() - 1};
+
+		do {
+			avg *= ind;
+			avg += ADerivative.second[ind];
+			avg /= ++ind;
+		} while (ADerivative.second[ind + 1] / avg < 5.0);
+		
+		ind++;
+		//ind stores the end point of the data set
+
+		return result;
+	}
+
+	void filter(std::span<double>& V, std::span<double>& I) {
+
+	}
+
+	double Acoeff(double dV) {
+		return 1.0;
+	}
+
+	//Parameters<4> preFit(JFMData& data, double T) {
+	//	//precut
+	//	//-- remove negatives
+	//	//filter
+	//	//--running average
+	//	//cut
+	//	//--derivative
+	//	//Rs and Rsch
+	//	//A
+	//	//I0
+	//	
+	//	//precut
+	//	size_t preCut{ 0 };
+	//	auto& V = data[0];
+	//	auto& I = data[1];
+
+	//	for (const auto& [v, i] : std::views::zip(V, I))
+	//		if (i < 0.0 || v < 0.0)
+	//			preCut++;
+
+
+	//	std::span<double> Vspan{ V.begin() + preCut, V.size() - preCut };
+	//	std::span<double> Ispan{ I.begin() + preCut, I.size() - preCut };
+
+
+	//	//filter
+
+
+
+	//}
+
+
+
 };

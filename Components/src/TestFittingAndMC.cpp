@@ -5,13 +5,9 @@
 
 namespace UI::Data::JunctionFitMasterUI
 {
-	static std::vector<double> numbIteration;
-	static std::vector<std::vector<double>> errors;
 
-	static std::vector<std::vector<double>> parameters;
-	static std::vector<NumericStorm::Fitting::Data> timeline;
-	static std::pair<std::vector<double>, std::vector<double>> regression_error{};
-	static std::vector<double> regression_res{};
+	std::pair<std::vector<double>, std::vector<double>> AlphaDV{};
+
 
 	std::array<std::array<double, 5>, 4> param_mat{};
 
@@ -43,11 +39,11 @@ namespace UI::Data::JunctionFitMasterUI
 		} true_data{};*/
 
 		struct trueData {
-			//double A = 1.5067;
-			double A = 2.1;
-			double I0 = 1.418e-10;
-			double Rs = 7.7;
-			double Rsh = 7000;
+			double A = 1;
+			//double A = 1.2;
+			double I0 = 5e-8;
+			double Rs = 5e-5;
+			double Rsh = 5e5;
 			double T = 330;
 			Parameters<4> parameters{ {A, I0, Rs, Rsh} };
 		} true_data{};
@@ -56,8 +52,8 @@ namespace UI::Data::JunctionFitMasterUI
 		struct simplexInit {
 			/*Parameters<4> minBounds{ {0.5, 1e-20, 1e-9, 10} };
 			Parameters<4> maxBounds{ { 20.0, 1e-3, 100, 1e9} };*/
-			Parameters<4> minBounds{ {0.5, 1e-11, 1, 1e3} };
-			Parameters<4> maxBounds{ { 2.5, 1e-9, 10, 9e3} };
+			Parameters<4> minBounds{ {0.5, 1e-10, 1e-5, 1e4} };
+			Parameters<4> maxBounds{ { 2.5, 9e-10, 9e-5, 9e4} };
 			Parameters<4> initialGuess{ { 1.5746, 1.6e-8, 6.77, 7000} };
 		} simplex_init{};
 
@@ -357,16 +353,16 @@ namespace UI::Data::JunctionFitMasterUI
 					ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
 
 				ImPlot::SetNextFillStyle(ImVec4(0, 0, 1, 0.5f), 1.0); 
-				ImPlot::PlotScatter("Best", &(param_mat[0][0]), &(param_mat[1][0]), 1);
+				ImPlot::PlotScatter("Best", &(param_mat[0][4]), &(param_mat[1][4]), 1);
 
 				ImPlot::SetNextFillStyle(ImVec4(1, 0, 1, 0.5f), 1.0);
-				ImPlot::PlotScatter("Rest", &(param_mat[0][1]), &(param_mat[1][1]), 2);
+				ImPlot::PlotScatter("Rest", &(param_mat[0][2]), &(param_mat[1][2]), 2);
 
 				ImPlot::SetNextFillStyle(ImVec4(0, 1, 0, 0.5f), 1.0);
-				ImPlot::PlotScatter("Second worst", &(param_mat[0][3]), &(param_mat[1][3]), 1);
+				ImPlot::PlotScatter("Second worst", &(param_mat[0][1]), &(param_mat[1][1]), 1);
 
 				ImPlot::SetNextFillStyle(ImVec4(1, 0, 0, 0.5f), 1.0);
-				ImPlot::PlotScatter("Worst", &(param_mat[0][4]), &(param_mat[1][4]), 1);
+				ImPlot::PlotScatter("Worst", &(param_mat[0][0]), &(param_mat[1][0]), 1);
 
 				ImPlot::SetNextFillStyle(ImVec4(1, 1, 0, 0.5f), 1.0);
 				ImPlot::PlotScatter("Centr", &(centr[0]), &(centr[1]), 1);
@@ -394,16 +390,16 @@ namespace UI::Data::JunctionFitMasterUI
 
 				
 				ImPlot::SetNextFillStyle(ImVec4(0, 0, 1, 0.5f), 1.0);
-				ImPlot::PlotScatter("Best", &(param_mat[2][0]), &(param_mat[3][0]), 1);
+				ImPlot::PlotScatter("Best", &(param_mat[2][4]), &(param_mat[3][4]), 1);
 
 				ImPlot::SetNextFillStyle(ImVec4(1, 0, 1, 0.5f), 1.0);
-				ImPlot::PlotScatter("Rest", &(param_mat[2][1]), &(param_mat[3][1]), 2);
+				ImPlot::PlotScatter("Rest", &(param_mat[2][2]), &(param_mat[3][2]), 2);
 
 				ImPlot::SetNextFillStyle(ImVec4(0, 1, 0, 0.5f), 1.0);
-				ImPlot::PlotScatter("Second worst", &(param_mat[2][3]), &(param_mat[3][3]), 1);
+				ImPlot::PlotScatter("Second worst", &(param_mat[2][1]), &(param_mat[3][1]), 1);
 
 				ImPlot::SetNextFillStyle(ImVec4(1, 0, 0, 0.5f), 1.0);
-				ImPlot::PlotScatter("Worst", &(param_mat[2][4]), &(param_mat[3][4]), 1);
+				ImPlot::PlotScatter("Worst", &(param_mat[2][0]), &(param_mat[3][0]), 1);
 
 				ImPlot::SetNextFillStyle(ImVec4(1, 1, 0, 0.5f), 1.0);
 				ImPlot::PlotScatter("Centr", &(centr[2]), &(centr[3]), 1);
@@ -414,27 +410,57 @@ namespace UI::Data::JunctionFitMasterUI
 		}
 
 		{
-			ImGui::Begin("A factor");
-			if (ImPlot::BeginPlot("I Derivative", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }))
+			ImGui::Begin("Alpha");
+			if (ImPlot::BeginPlot("Alpha vs dV", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }))
 			{
 				auto transformForwardLinear = [](double v, void*)
 					{ return std::log(std::abs(v)); };
 				auto transformForwardNaturalLog = [](double v, void*)
 					{ return std::exp(v); };
 
-				ImPlot::SetupAxes("V", "I'");
+				ImPlot::SetupAxes("dV", "Alpha'", plotSettings.plotBaseFlags, plotSettings.plotBaseFlags);
 
 				if (plotSettings.xLog)
 					ImPlot::SetupAxisScale(ImAxis_X1, transformForwardLinear, transformForwardNaturalLog);
 				if (plotSettings.yLog)
 					ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
 
+				auto& Xdata = AlphaDV.first;
+				auto& Ydata = AlphaDV.second;
+
+				ImPlot::PlotScatter("Rs", Xdata.data(), Ydata.data(), Xdata.size() / 2);
+
+
+				ImPlot::SetNextFillStyle(ImVec4(1, 1, 0, 0.5f), 1.0);
+				ImPlot::PlotScatter("Rsch", Xdata.data() + (Xdata.size() / 2), Ydata.data()  + (Xdata.size() / 2), Xdata.size() / 2  - 2);
+
+
+				ImPlot::EndPlot();
+			}
+			ImGui::End();
+		}
+
+		{
+			ImGui::Begin("Char Derivative");
+			if (ImPlot::BeginPlot("V vs I'", { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y }))
+			{
+				auto transformForwardLinear = [](double v, void*)
+					{ return std::log(std::abs(v)); };
+				auto transformForwardNaturalLog = [](double v, void*)
+					{ return std::exp(v); };
+
+				ImPlot::SetupAxes("V", "I''", plotSettings.plotBaseFlags, plotSettings.plotBaseFlags);
+
+				if (plotSettings.xLog)
+					ImPlot::SetupAxisScale(ImAxis_X1, transformForwardLinear, transformForwardNaturalLog);
+				if (plotSettings.yLog)
+					ImPlot::SetupAxisScale(ImAxis_Y1, transformForwardLinear, transformForwardNaturalLog);
+
+
 				auto& Xdata = JunctionFitMaster::PreFit::ADerivative.first;
 				auto& Ydata = JunctionFitMaster::PreFit::ADerivative.second;
 
-
-
-				ImPlot::PlotLine("I der", Xdata.data(), Ydata.data(), Xdata.size());
+				ImPlot::PlotLine("I'", Xdata.data(), Ydata.data(), Xdata.size());
 
 
 				ImPlot::EndPlot();
@@ -887,7 +913,7 @@ namespace UI::Data::JunctionFitMasterUI
 	void FittingTesting::SingleShot()
 	{
 		FourParameters parameters;
-		std::vector<double> p{ 1, 5e-8, 5e-6, 5e5 };
+		std::vector<double> p{ 1, 5e-8, 5e-5, 5e5 };
 		for (const auto& [name, item] : std::views::zip(std::ranges::iota_view(0, 4), p))
 		{
 			// parameters[utils::cast<ParametersNames>(name)] = item;
@@ -909,6 +935,8 @@ namespace UI::Data::JunctionFitMasterUI
 		m_characteristics.push_back(characteristic);
 	};
 
+	static double err{ -1.0 };
+
 	void FittingTesting::Fit()
 	{
 
@@ -916,9 +944,24 @@ namespace UI::Data::JunctionFitMasterUI
 
 		using namespace JunctionFitMasterFromNS::IVFitting;
 
+
 		Parameters<4> initialPoint{};
 		if (m_characteristics.size() > 0) {
 			auto& data = m_characteristics[0].originalData;
+
+			auto filt = JunctionFitMaster::PreFit::filter(data);
+
+			Characteristic toAdd;
+			toAdd.get(Characteristic::ReturningType::Voltage) = filt[0];
+			toAdd.get(Characteristic::ReturningType::Current) = filt[1];
+			toAdd.getTemperature() = m_characteristics[0].getTemperature();
+			std::string name;
+			for (const auto& item : toAdd.parameters.parameters)
+				name += std::to_string(item) + "  ";
+			toAdd.name = name;
+			m_characteristics.push_back(toAdd);
+
+			return;
 
 			auto params = JunctionFitMaster::PreFit::estimate(data, init_data.true_data.T);
 			initialPoint = params;
@@ -927,47 +970,75 @@ namespace UI::Data::JunctionFitMasterUI
 
 
 
-
-
-
-		using namespace JunctionFitMasterFromNS::IVFitting;
+		
 		IVFittingSetup setUp;
 		NumericStorm::Fitting::Data& data = m_characteristics[0].originalData;
 
 		double T = m_characteristics[0].getTemperature();
 
 
+		std::vector<JFMData> d = JunctionFitMaster::PreFit::correlate(data[0], init_data.true_data.parameters, init_data.true_data.T, AlphaDV.first, AlphaDV.second);
+
+		std::cout << "dV: " << " Alpha: " << std::scientific << std::endl;
+		for (const auto& [d, a] : std::views::zip(AlphaDV.first, AlphaDV.second))
+			std::cout << d << "   " << a << std::endl;
+
+		for (auto& da : d) {
+			
+			Characteristic toAdd;
+			toAdd.get(Characteristic::ReturningType::Voltage) = da[0];
+			toAdd.get(Characteristic::ReturningType::Current) = da[1];
+			toAdd.getTemperature() = m_characteristics[0].getTemperature();
+			std::string name;
+			for (const auto& item : toAdd.parameters.parameters)
+				name += std::to_string(item) + "  ";
+			toAdd.name = name;
+			m_characteristics.push_back(toAdd);
+		}
+
+
 		setUp.simplexMin = init_data.simplex_init.minBounds;
 		setUp.simplexMax = init_data.simplex_init.maxBounds;
 
-		ivOptimizer = getOptimizer(setUp);
+		/*ivOptimizer = getOptimizer(setUp);
 		ivState = ivOptimizer.setUpOptimization(initialPoint, data, T);
 		ivState.getSimplexFigure().sort();
+
+		err = ivState.getBestPoint().getError();*/
 	};
 
-
+	
 
 	void FittingTesting::Step(IVSimplexOptimizer<IVModel>& optimizer, typename IVSimplexOptimizer<IVModel>::SettingsT::OptimizerStateT& state) {
-
+		
 		if (!optimizer.checkStop(state)) {
 			optimizer.oneStep(state);
 
-			state.getSimplexFigure().sort(false);
-			std::cout << "Iteration" << std::endl;
-			for (auto& p : state.getSimplexFigure())
-				std::cout << "A: " << p[0] << " I0: " << std::scientific << p[1] << std::fixed << " Rs: " << p[2] << " Rsch: " << p[3] << " Error: " << p.getError() << std::endl;
+			double e = std::accumulate(state.getSimplexFigure().begin(), state.getSimplexFigure().end() - 1, 0.0, [](double sum, const auto& item) {return sum + item.getError(); });
+
+			e /= 4;
+
+			if (std::abs(e - state.getBestPoint().getError()) < 1e-1) {
+				auto nState = optimizer.setUpOptimization(state.getBestPoint().getParameters(), m_characteristics[0].originalData, m_characteristics[0].getTemperature());
+				nState.getIteration() = state.getIteration();
+				state = nState;
+			}
 
 			state.getSimplexFigure().calculateCentroid();
 			centr = state.getSimplexFigure().getCentroid().getParameters().getParameters();
+
+			std::cout << "Iteration" << std::endl;
+			for (auto& p : state.getSimplexFigure())
+				std::cout << "A: " << p[0] << " I0: " << std::scientific << p[1] << std::fixed << " Rs: " << p[2] << " Rsch: " << p[3] << " Error: " << p.getError() << std::endl;
 
 			for (const auto& [i, param_a] : std::views::enumerate(param_mat)) { // 4
 				for (const auto& [src, dest] : std::views::zip(state.getSimplexFigure(), param_a)) { //5
 					dest = src[i];
 				}
 			}
-			state.getSimplexFigure().sort();
 		}
-		else {
+		else if(state.getIteration() < 4000) {
+			state.getIteration() = 4100;
 			Characteristic toAdd;
 			toAdd.setAll(m_characteristics[0].originalData[0]);
 			toAdd.parameters.parameters = state.getBestPoint().getParameters();
