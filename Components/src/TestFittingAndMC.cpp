@@ -42,8 +42,8 @@ namespace UI::Data::JunctionFitMasterUI
 			double A = 1;
 			//double A = 1.2;
 			double I0 = 5e-8;
-			double Rs = 5e-5;
-			double Rsh = 5e5;
+			double Rs = 5e-6;
+			double Rsh = 5e8;
 			double T = 330;
 			Parameters<4> parameters{ {A, I0, Rs, Rsh} };
 		} true_data{};
@@ -945,7 +945,7 @@ namespace UI::Data::JunctionFitMasterUI
 		using namespace JunctionFitMasterFromNS::IVFitting;
 
 
-		Parameters<4> initialPoint{};
+		/*Parameters<4> initialPoint{};
 		if (m_characteristics.size() > 0) {
 			auto& data = m_characteristics[0].originalData;
 
@@ -966,7 +966,7 @@ namespace UI::Data::JunctionFitMasterUI
 			auto params = JunctionFitMaster::PreFit::estimate(data, init_data.true_data.T);
 			initialPoint = params;
 			std::cout << std::scientific << "A: " << params[0] << " I0: " << params[1] << " Rs: " << params[2] << " Rp: " << params[3] << std::fixed << std::endl;
-		}
+		}*/
 
 
 

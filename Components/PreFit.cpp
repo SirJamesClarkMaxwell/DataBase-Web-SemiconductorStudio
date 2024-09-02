@@ -85,7 +85,7 @@ namespace JunctionFitMaster::PreFit {
 
 		double maxDer{ 0.0 };
 		size_t maxDerIndex{ 0 };
-		for(size_t i = 0; i < ADerivative.second.size(); i++)
+		for (size_t i = 0; i < ADerivative.second.size(); i++)
 			if (ADerivative.second[i] > maxDer) {
 				maxDer = ADerivative.second[i];
 				maxDerIndex = i;
@@ -93,12 +93,12 @@ namespace JunctionFitMaster::PreFit {
 
 		size_t dVB{ maxDerIndex };
 		size_t dVE{ maxDerIndex };
-		double tol{ 0.90 };
+		double tol{ 0.95 };
 		while (ADerivative.second[dVB] > maxDer * tol || ADerivative.second[dVE] > maxDer * tol) {
 			if (ADerivative.second[dVB] > maxDer * tol) dVB--;
 			if (ADerivative.second[dVE] > maxDer * tol) dVE++;
-
-			if(dVB == 0 || dVE == ADerivative.second.size() - 1)
+			//assert(dVB < ADerivative.second.size());
+			if (dVB > ADerivative.second.size() - 1 || dVE > ADerivative.second.size() - 1)
 				break;
 		}
 
@@ -132,12 +132,24 @@ namespace JunctionFitMaster::PreFit {
 		alphas.clear();
 
 		M m{};
-
-		for (double R = 10; R <= 1e9; R *= std::sqrt(std::sqrt(10)))
+		double ko = std::pow(10, (double)1 / 40);
+		for (double R = 100; R <= 1e9;) {
 			Rsch.push_back(R);
+			R = 1e9;
+			Rsch.push_back(R);
+			break;
+			/*if (R < 1e2) R *= ko;
+			else R += (1e9 - 100.0) / 10000.0;*/
+		}
 
-		for (double R = 1e-7; R <= 100; R *= std::sqrt(std::sqrt(10)))
+		for (double R = 1e-7; R <= 100;) {
 			Rs.push_back(R);
+			R = 100;
+			Rs.push_back(R);
+			break;
+			/*if (R < 1e-1) R *= ko;
+			else R += (100.0 - 1.0) / 10000.0;*/
+		}
 
 		std::vector<JFMData> dataSets{};
 
@@ -169,7 +181,23 @@ namespace JunctionFitMaster::PreFit {
 			dVs.push_back(dV);
 		}
 
+		
+		std::unordered_map<double, std::vector<double>> dVtoA{};
+		for (const auto& [i, v] : std::views::zip(alphas, dVs)) {
+			dVtoA[v].push_back(i);
+		}
 
+		size_t num{ 0 };
+		for (const auto& [k, v] : dVtoA) {
+			dVs[num] = k;
+			alphas[num] = std::accumulate(v.begin(), v.end(), 0.0) / v.size();
+			num++;
+		}
+		dVs.resize(num);
+		alphas.resize(num);
+		for (const auto& [v, a] : std::views::zip(dVs, alphas)) {
+			std::cout << std::scientific << v << "\t" << a << std::endl;
+		}
 		return dataSets;
 	}
 
@@ -187,7 +215,7 @@ namespace JunctionFitMaster::PreFit {
 		std::transform(input[1].begin() + start, input[1].end(), std::back_inserter(logI), [](double i) {return std::log(i); });
 
 		JFMData result{};
-		
+
 		result[0].resize(input[0].size() - start);
 		std::copy(input[0].begin() + start, input[0].end(), result[0].begin());
 		result[1].resize(input[1].size() - start);
@@ -203,7 +231,7 @@ namespace JunctionFitMaster::PreFit {
 
 
 		std::transform(result[1].begin(), result[1].end(), result[1].begin(), [](double i) {return std::exp(i); });
-		
+
 
 		auto derivate = [&](const std::vector<double>& v, const std::vector<double>& c, std::pair<std::vector<double>, std::vector<double>>& result) {
 			double der{ 0.0 };
@@ -221,15 +249,15 @@ namespace JunctionFitMaster::PreFit {
 		derivate(result[0], logI, ADerivative);
 
 		double avg{ 0.0 };
-		size_t ind{ ADerivative.second.size() - 1};
+		size_t ind{ 0 };
 
 		do {
 			avg *= ind;
-			avg += ADerivative.second[ind];
+			avg += ADerivative.second[ADerivative.second.size() - 1 - ind];
 			avg /= ++ind;
-		} while (ADerivative.second[ind + 1] / avg < 5.0);
-		
-		ind++;
+		} while (ADerivative.second[ADerivative.second.size() - 1 - ind] / avg < 5.0);
+
+		ind = ADerivative.second.size() - 1 - ind;
 		//ind stores the end point of the data set
 
 		return result;
