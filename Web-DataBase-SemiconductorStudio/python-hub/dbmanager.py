@@ -188,75 +188,107 @@ class Manager:
             print(f"Error: {error}")
             return None
 
-    def crate_storage(self, storage_name, record_name, short_desc):
+    def crate_storage(self, storage_name, record_name, short_desc) -> bool:
         uuid = self.generate_uuid()
-
-        query = f"INSERT INTO test.main_table (id_, record_name, storages, short_description) VALUES ('{uuid}', '{record_name}', '{storage_name}', '{short_desc}');"
-        query2 = f"CREATE TABLE test.{storage_name} (id uuid PRIMARY KEY, name varchar(30));"
-        query3 = f"INSERT INTO test.{storage_name} (id, name) VALUES ('{uuid}', '{record_name}');"
+        storage_name = storage_name.replace(" ", "_")
+        
+        # Check if the record_name and storage_name already exist in the main_table
+        check_query = f"""
+        SELECT COUNT(*) FROM test.main_table 
+        WHERE record_name = '{record_name}';
+        """
         
         try:
+            # Execute the check query
+            self.cursor.execute(check_query)
+            result = self.cursor.fetchone()
 
+            # If the combination already exists, return an error
+            if result[0] > 0:
+                print(f"Error: Record with record_name '{record_name}' and storage_name '{storage_name}' already exists.")
+                return False
+
+            # If the combination doesn't exist, proceed with the insertions
+            query = f"""
+            INSERT INTO test.main_table (id_, record_name, storages, short_description) 
+            VALUES ('{uuid}', '{record_name}', '{storage_name}', '{short_desc}');
+            """
+            query2 = f"CREATE TABLE test.{storage_name} (id uuid PRIMARY KEY, name varchar(30));"
+            query3 = f"INSERT INTO test.{storage_name} (id, name) VALUES ('{uuid}', '{record_name}');"
+            
             self.cursor.execute(query)
             self.cursor.execute(query2)
             self.cursor.execute(query3)
             self.conn.commit()
             
-        
+            return True
         except Exception as error:
             print(f"Error: {error}")
-            return None
+            return False
         
-    def insert_mesurement(self, recordname, mes, data)->None:
-        query1 = f"SELECT id_ FROM test.main_table WHERE record_name = '{recordname}'"
+    def insert_measurement(self, record_name, measurement_type, data):
         try:
-
-            self.cursor.execute(query1)
-            result1 = self.cursor.fetchall()
-            id_ = str(result1[0][0])
-
-            query2 = f"INSERT INTO test.{mes} (id, name, data, mes_num) VALUES ('{id_}', '{recordname}', '{data}', 1)"
-            query3 = f"UPDATE test.main_table SET {mes} = '{id_}' WHERE id_ = '{id_}';"
-            self.cursor.execute(query2)
-            self.cursor.execute(query3)
+            # Use parameterized queries
+            query1 = "SELECT id_ FROM test.main_table WHERE record_name = %s"
+            self.cursor.execute(query1, (record_name,))
+            result1 = self.cursor.fetchone()
+            
+            if result1 is None:
+                raise ValueError(f"No record found with name: {record_name}")
+            
+            id_ = str(result1[0])
+            print(result1, flush=True)
+            
+            # Check if the record already exists in the measurement table
+            query2 = f"""
+                SELECT id, mes_num, next_mesurement 
+                FROM test.{measurement_type} 
+                WHERE name = %s 
+                ORDER BY mes_num DESC 
+                LIMIT 1
+            """
+            self.cursor.execute(query2, (record_name,))
+            existing_record = self.cursor.fetchone()
+            
+            new_id = str(uuid.uuid4())  # Generate a new UUID for the new measurement
+            
+            if existing_record:
+                # If record exists, use the next mes_num
+                new_mes_num = existing_record[1] + 1
+                
+                # Insert new measurement
+                query3 = f"INSERT INTO test.{measurement_type} (id, name, data, mes_num) VALUES (%s, %s, %s, %s)"
+                self.cursor.execute(query3, (new_id, record_name, data, new_mes_num))
+                
+                # Update the previous record's next_mesurement
+                query4 = f"UPDATE test.{measurement_type} SET next_mesurement = %s WHERE id = %s"
+                self.cursor.execute(query4, (new_id, existing_record[0]))
+            else:
+                # If no record exists, insert as a new record with mes_num 1
+                query5 = f"INSERT INTO test.{measurement_type} (id, name, data, mes_num) VALUES (%s, %s, %s, %s)"
+                self.cursor.execute(query5, (new_id, record_name, data, 1))
+            
+                # Update the main table
+                query6 = f"UPDATE test.main_table SET {measurement_type} = %s WHERE id_ = %s"
+                self.cursor.execute(query6, (new_id, id_))
+            
             self.conn.commit()
-            return None
+            return True
+                
+
         
         except Exception as error:
-            print(f"Error: {error}")
-            return None
-        
-    def insert_another_mes(self, mes, data, uuid):
+            print(f"Error in insert_measurement: {error}")
+            self.conn.rollback()
+            raise
 
-        amount = self.get_from_db(f"{mes}", "id", f"{uuid}", False, "mes_num")
-        nex = amount + 1
-        try:
-
-            query1 = f"CREATE TABLE test.{nex} (id uuid PRIMARY KEY, data text, next_mes uuid, mes_num int);"
-            self.cursor.execute(query1)
-
-            query2 = f"ALTER TABLE text.{amount} ADD CONSTRAINT FOREIGN KEY fk_ivn FOREIGN KEY (next_mesurement) REFERENCES test.{nex}(id);"
-            self.cursor.execute(query2)
-            query3 = f"INSERT INTO TABLE test.{nex} (data) VALUES ('{data}');"
-            query4 = f"UPDATE test.iv SET mes_num = '{nex}' WHERE id_ = '{uuid}';"
-            self.cursor.execute(query3)
-            self.cursor.execute(query4)
-
-            results = self.cursor.fetchall()
-            self.conn.commit()
-            return results
-        
-        except Exception as error:
-            print(f"Error: {error}")
-            return None
     def get_network(self):
         main_table = self.get_from_db("main_table", "a", "a", True, "storages", "record_name", "iv", "cv")
-        #print(main_table)
         curr = self.get_from_db("iv", "", "", True, "name", "mes_num")
         c = self.get_from_db("cv", "", "", True, "name", "mes_num")
         storages_data = []
-        mes_data = []
         result = []
+
         try:
             for i in range(len(main_table)):
                 storage = main_table[i][0]
@@ -265,20 +297,58 @@ class Manager:
                 self.cursor.execute(query)
                 storages = self.cursor.fetchall()
                 storages_data.append({"storage name": storage, "record name": storages[0][1]})
-                #print(storages_data)
-                
-                amount_i = curr[i][1]
-                rec_name_i = curr[i][0]
 
-                amount_c = c[i][1]
-                rec_name_c =  c[i][0]
-                mes_data.append({"number of I(V) chars for given record" : amount_i, "I(V) record": rec_name_i, "number of C(V) chars for given record": amount_c, "C(V) record": rec_name_c})
-                
-            result.append(mes_data)
-            result.append(storages_data)
-            #print(mes_data)
-            #print(storages_data)
+                mes_data = []  # Reset mes_data for each record
 
+                # Handling I(V) characteristics
+                iv_query = f"""
+                SELECT * FROM test.iv WHERE name = '{record}';
+                """
+                self.cursor.execute(iv_query)
+                iv_records = self.cursor.fetchall()
+
+                if iv_records:
+                    iv_details = []
+                    for iv_record in iv_records:
+                        iv_values = iv_record[2]  # Assuming the third column contains the list of I(V) values
+                        iv_details.append({
+                            "IV record ID": iv_record[0],  # UUID of the I(V) record
+                            "IV values": iv_values
+                        })
+                    mes_data.append({
+                        "I(V) characteristics": iv_details
+                    })
+                else:
+                    mes_data.append({f"No I(V) characteristics for given storage: {storage}"})
+
+                # Handling C(V) characteristics
+                cv_query = f"""
+                SELECT * FROM test.cv WHERE name = '{record}';
+                """
+                self.cursor.execute(cv_query)
+                cv_records = self.cursor.fetchall()
+
+                if cv_records:
+                    cv_details = []
+                    for cv_record in cv_records:
+                        cv_values = cv_record[2]  # Assuming the third column contains the list of C(V) values
+                        cv_details.append({
+                            "CV record ID": cv_record[0],  # UUID of the C(V) record
+                            "CV values": cv_values
+                        })
+                    mes_data.append({
+                        "C(V) characteristics": cv_details
+                    })
+                else:
+                    mes_data.append({f"No C(V) characteristics for given storage: {storage}"})
+
+                result.append({
+                    "storage_name": storage,
+                    "record_name": record,
+                    f"Data for storage: {storage}": mes_data
+                })
+
+            result.append({"storages_data": storages_data})
             print(result)
             return result
         except Exception as error:
