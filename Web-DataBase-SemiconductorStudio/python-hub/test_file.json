@@ -1,0 +1,15 @@
+{
+
+    "record_name": "completly",
+    "storage_name": "n_stor_ew",
+    "desc": "here goes short storage description like: mesurements for SiO2",
+    "data": 
+        [
+            {
+                "iv": [1, 2, 3, 4, 5],
+                "cv": [1, 2, 3],
+                "temperature": "1003"
+            }
+        ]
+
+}

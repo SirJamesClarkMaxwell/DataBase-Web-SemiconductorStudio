@@ -8,6 +8,9 @@ import uuid
 import bcrypt
 import uuid
 from parser import Parser
+import json
+
+
 load_dotenv()
 
 
@@ -205,7 +208,7 @@ class Manager:
 
             # If the combination already exists, return an error
             if result[0] > 0:
-                print(f"Error: Record with record_name '{record_name}' and storage_name '{storage_name}' already exists.")
+                print(f"Error: Record with record_name '{record_name}' already exists.")
                 return False
 
             # If the combination doesn't exist, proceed with the insertions
@@ -226,7 +229,7 @@ class Manager:
             print(f"Error: {error}")
             return False
         
-    def insert_measurement(self, record_name, measurement_type, data):
+    def insert_measurement(self, record_name, measurement_type, data, temperature):
         try:
             # Use parameterized queries
             query1 = "SELECT id_ FROM test.main_table WHERE record_name = %s"
@@ -257,16 +260,16 @@ class Manager:
                 new_mes_num = existing_record[1] + 1
                 
                 # Insert new measurement
-                query3 = f"INSERT INTO test.{measurement_type} (id, name, data, mes_num) VALUES (%s, %s, %s, %s)"
-                self.cursor.execute(query3, (new_id, record_name, data, new_mes_num))
+                query3 = f"INSERT INTO test.{measurement_type} (id, name, data, mes_num, temperature) VALUES (%s, %s, %s, %s, %s)"
+                self.cursor.execute(query3, (new_id, record_name, data, new_mes_num, temperature))
                 
                 # Update the previous record's next_mesurement
                 query4 = f"UPDATE test.{measurement_type} SET next_mesurement = %s WHERE id = %s"
                 self.cursor.execute(query4, (new_id, existing_record[0]))
             else:
                 # If no record exists, insert as a new record with mes_num 1
-                query5 = f"INSERT INTO test.{measurement_type} (id, name, data, mes_num) VALUES (%s, %s, %s, %s)"
-                self.cursor.execute(query5, (new_id, record_name, data, 1))
+                query5 = f"INSERT INTO test.{measurement_type} (id, name, data, mes_num, temperature) VALUES (%s, %s, %s, %s, %s)"
+                self.cursor.execute(query5, (new_id, record_name, data, 1, temperature))
             
                 # Update the main table
                 query6 = f"UPDATE test.main_table SET {measurement_type} = %s WHERE id_ = %s"
@@ -354,6 +357,49 @@ class Manager:
         except Exception as error:
             print(f"Error: {error}")
             return None
+        
+    def insert_batch_measurements(self, file_name):
+        '''
+        
+        tutaj wykorzystujemy wcześniejsze funkcje by ułatwić zadanie. Funkcja wymaga nawy pliku z którego chcemy pobierać dane, obecnie dodajemy dane do określonego storage i recordu. Jeśli wcześniej ich nie ma w bazie danych to tworzymy nowe, a jeśli są to dadajemy do instiejących
+        '''
+        try:
+
+            with open(file_name, 'r') as file:
+                data = json.load(file)
+            
+
+            storage_name = data["storage_name"]
+            record_name = data["record_name"]
+            desc = data["desc"]
+            measurements = data["data"]
+
+            self.crate_storage(storage_name, record_name, desc)
+
+            temp = "not provided"
+            for measurement in measurements:
+                
+                if "temperature" in measurement:
+                    temp = measurement["temperature"]
+
+
+                if "iv" in measurement:
+                    iv_data = json.dumps(measurement["iv"])  
+                    self.insert_measurement(record_name, "iv", iv_data, temp)
+
+                if "cv" in measurement:
+                    cv_data = json.dumps(measurement["cv"])  
+                    self.insert_measurement(record_name, "cv", cv_data, temp)
+
+
+
+            print(f"Successfully inserted batch measurements for record '{record_name}' in storage '{storage_name}'")
+            return True
+
+        except Exception as error:
+            print(f"Error in insert_batch_measurements: {error}")
+            self.conn.rollback()
+            return False
     def close_conn(self)->None:
         '''
         closing connection to database

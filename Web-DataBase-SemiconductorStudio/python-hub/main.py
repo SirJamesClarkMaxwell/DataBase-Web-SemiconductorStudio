@@ -158,6 +158,7 @@ def make_json_serializable(data):
 
 @app.route('/API/getConns', methods = ['GET'])
 def getConns():
+    
     try:
         mng.get_conn()
         # networking = mng.get_network()
@@ -176,7 +177,27 @@ def getConns():
         traceback.print_exc()  # Print full stack trace
         return {"error": "Failed to get data"}, 500
 
+@app.route('/API/batchinsert', methods = ['POST'])
+def isnertBatchData():
+    data = request.json
 
+    file_name = data.get('file_name')
+    try:
+        mng.get_conn()
+
+        mng.insert_batch_measurements(file_name)
+
+        mng.close_conn()
+
+        return jsonify("sucesfully inserted batch data"), 200
+
+
+
+    
+    except Exception as e:
+        print(f"Error: {e}")
+        traceback.print_exc()  
+        return {"error": "Failed to insert batch data"}, 500
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
